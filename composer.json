@@ -1,0 +1,14 @@
+{
+    "name": "dph/navsend",
+    "description": "NAV",
+    "type": "project",
+    "require": {
+        "pzs/nav-online-invoice": "^2.0"
+    },
+    "authors": [
+        {
+            "name": "Andor Molnár",
+            "email": "andor@apache.org"
+        }
+    ]
+}
