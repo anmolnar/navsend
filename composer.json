@@ -3,7 +3,8 @@
     "description": "NAV",
     "type": "project",
     "require": {
-        "pzs/nav-online-invoice": "^2.0"
+        "pzs/nav-online-invoice": "^2.0",
+        "ext-SimpleXML": "^7.3"
     },
     "authors": [
         {

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "86d49e4273f78777587c975d80290f65",
+    "content-hash": "a63275e03fe47629eec58a3735032c08",
     "packages": [
         {
             "name": "pzs/nav-online-invoice",
@@ -40,6 +40,8 @@
     "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
+    "platform": {
+        "ext-simplexml": "^7.3"
+    },
     "platform-dev": []
 }
