@@ -7,6 +7,7 @@ require_once __DIR__ . "/../../../societe/class/societe.class.php";
 
 class NavInvoiceXmlBuilder
 {
+	const DATE_FORMAT = "Y-m-d";
 	const xml_skeleton = <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
 <InvoiceData xmlns="http://schemas.nav.gov.hu/OSA/2.0/data" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.nav.gov.hu/OSA/2.0/data invoiceData.xsd">
@@ -16,26 +17,29 @@ XML;
 	private $db;
 	private $root;
 	private $mysoc;
-	private $invoice;
+	private $invoice; /** @var Facture $invoice */
 
-	public function __construct($db, $mysoc, $invoice)
-	{
+	public function __construct($db, $mysoc, $invoice) {
 		$this->db = $db;
 		$this->root = new SimpleXMLElement(self::xml_skeleton);
 		$this->mysoc = $mysoc;
 		$this->invoice = $invoice;
 	}
 
-	public function build()
-	{
+	public function build()	{
 		$this->root->addChild("invoiceNumber", $this->invoice->ref);
-		$date_creation = new DateTime();
-		$date_creation->setTimestamp($this->invoice->date_creation);
-		$this->root->addChild("invoiceIssueDate", $date_creation->format('Y-m-d'));
+		$this->root->addChild("invoiceIssueDate", $this->getFormattedDate($this->invoice->date_creation));
 		$invoiceNode = $this->root->addChild("invoiceMain")->addChild("invoice");
 		$invoiceHead = $invoiceNode->addChild("invoiceHead");
 		$this->addSupplierInfo($invoiceHead->addChild("supplierInfo"));
 		$this->addCustomerInfo($invoiceHead->addChild("customerInfo"));
+		$detail = $invoiceHead->addChild("invoiceDetail");
+		$detail->addChild("invoiceCategory", $this->getInvoiceCategory($this->invoice->type));
+		$detail->addChild("invoiceDeliveryDate");
+		$detail->addChild("currencyCode", $this->invoice->multicurrency_code);
+		$detail->addChild("exchangeRate", $this->invoice->multicurrency_tx);
+		$detail->addChild("paymentDate", $this->getFormattedDate($this->invoice->date_lim_reglement));
+		$detail->addChild("invoiceAppearance", "PAPER");
 		return $this;
 	}
 
@@ -46,25 +50,10 @@ XML;
 		print($dom->saveXML());
 	}
 
-	private function addSupplierInfo($node)
-	{
-		$tva = explode("-", $this->mysoc->tva_intra);
-		$taxNumber = $node->addChild("supplierTaxNumber");
-		$taxNumber->addChild("taxpayerId", $tva[0]);
-		$taxNumber->addChild("vatCode", $tva[1]);
-		$taxNumber->addChild("countyCode", $tva[2]);
+	private function addSupplierInfo($node) {
+		$this->explodeTaxNumber($node->addChild("supplierTaxNumber"), $this->mysoc->tva_intra);
 		$node->addChild("supplierName", $this->mysoc->name);
-		$address = $node->addChild("supplierAddress")->addChild("detailedAddress");
-		$country = new Ccountry($this->db);
-		$country->fetch($this->mysoc->country_id);
-		$address->addChild("countryCode", $country->code);
-		$address->addChild("postalCode", $this->mysoc->zip);
-		$address->addChild("city", $this->mysoc->town);
-		$address->addChild("streetName", $this->mysoc->address);
-		// publicPlaceCategory
-		// number
-		// floor
-		// door
+		$this->explodeAddress($node->addChild("supplierAddress"), $this->mysoc);
 		$bac = new Account($this->db);
 		$bac->fetch($this->invoice->fk_account);
 		$node->addChild("supplierBankAccountNumber", $bac->number);
@@ -73,11 +62,46 @@ XML;
 	private function addCustomerInfo($node) {
 		$soc = new Societe($this->db);
 		$soc->fetch($this->invoice->socid);
-		$tva = explode("-", $soc->tva_intra);
-		$taxNumber = $node->addChild("customerTaxNumber");
-		$taxNumber->addChild("taxpayerId", $tva[0]);
-		$taxNumber->addChild("vatCode", $tva[1]);
-		$taxNumber->addChild("countyCode", $tva[2]);
+		$this->explodeTaxNumber($node->addChild("customerTaxNumber"), $soc->tva_intra);
 		$node->addChild("customerName", $soc->name);
+		$this->explodeAddress($node->addChild("customerAddress"), $soc);
+	}
+
+	private function explodeTaxNumber($node, $tva_intra) {
+		$tva = explode("-", $tva_intra);
+		$node->addChild("taxpayerId", $tva[0]);
+		$node->addChild("vatCode", $tva[1]);
+		$node->addChild("countyCode", $tva[2]);
+	}
+
+	private function explodeAddress($node, $soc) {
+		$address = $node->addChild("detailedAddress");
+		$country = new Ccountry($this->db);
+		$country->fetch($soc->country_id);
+		$address->addChild("countryCode", $country->code);
+		$address->addChild("postalCode", $soc->zip);
+		$address->addChild("city", $soc->town);
+		$address->addChild("streetName", $soc->address);
+		/* TODO
+		 * publicPlaceCategory
+		 * number
+		 * floor
+		 * door
+		*/
+	}
+
+	private function getInvoiceCategory($type) {
+		switch ($type) {
+			case 0:
+				return "NORMAL";
+			default:
+				return "UNKNOWN";
+		}
+	}
+
+	private function getFormattedDate($date) {
+		$dt = new DateTime();
+		$dt->setTimestamp($date);
+		return $dt->format(self::DATE_FORMAT);
 	}
 }
