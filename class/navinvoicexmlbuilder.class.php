@@ -40,6 +40,8 @@ XML;
 		$detail->addChild("exchangeRate", $this->invoice->multicurrency_tx);
 		$detail->addChild("paymentDate", $this->getFormattedDate($this->invoice->date_lim_reglement));
 		$detail->addChild("invoiceAppearance", "PAPER");
+		$detail->addChild("additionalInvoiceData"); // TODO
+		$this->addInvoiceLines($invoiceNode->addChild("invoiceLines"));
 		return $this;
 	}
 
@@ -65,6 +67,39 @@ XML;
 		$this->explodeTaxNumber($node->addChild("customerTaxNumber"), $soc->tva_intra);
 		$node->addChild("customerName", $soc->name);
 		$this->explodeAddress($node->addChild("customerAddress"), $soc);
+	}
+
+	private function addInvoiceLines($node) {
+		$i = 1;
+		foreach ($this->invoice->lines as $ligne) { /** @var FactureLigne $ligne */
+			$line = $node->addChild("line");
+			$line->addChild("lineNumber", $i);
+			$line->addChild("productCodes"); // TODO
+			$line->addChild("lineExpressionIndicator", "true");
+			$line->addChild("lineNatureIndicator", $ligne->product_type == 0 ? "PRODUCT" : "SERVICE");
+			$line->addChild("lineDescription", $ligne->desc);
+			$line->addChild("quantity", $ligne->qty);
+			$line->addChild("unitOfMeasure");
+			$line->addChild("unitPrice", $ligne->subprice);
+
+			$amounts = $line->addChild("lineAmountsNormal");
+
+			$net_amount = $amounts->addChild("lineNetAmountData");
+			$net_amount->addChild("lineNetAmount", $ligne->total_ht);
+			$net_amount->addChild("lineNetAmountHUF", $ligne->total_ht);
+
+			$amounts->addChild("lineVatRate")->addChild("vatPercentage", $ligne->tva_tx / 100);
+			$vatdata = $amounts->addChild("lineVatData");
+			$vatdata->addChild("lineVatAmount", $ligne->total_tva);
+			$vatdata->addChild("lineVatAmountHUF", $ligne->total_tva);
+
+			$gross = $amounts->addChild("lineGrossAmountData");
+			$gross->addChild("lineGrossAmountNormal", $ligne->total_ttc);
+			$gross->addChild("lineGrossAmountNormalHUF", $ligne->total_ttc);
+
+			$i++;
+		}
+
 	}
 
 	private function explodeTaxNumber($node, $tva_intra) {
