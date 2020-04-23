@@ -2,6 +2,8 @@
 /* Copyright (C) 2020 Andor Molnár <andor@apache.org> */
 
 require_once __DIR__ . "/../../../core/class/ccountry.class.php";
+require_once __DIR__ . "/../../../compta/bank/class/account.class.php";
+require_once __DIR__ . "/../../../societe/class/societe.class.php";
 
 class NavInvoiceXmlBuilder
 {
@@ -14,32 +16,27 @@ XML;
 	private $db;
 	private $root;
 	private $mysoc;
+	private $invoice;
 
-	public function __construct($db, $mysoc)
+	public function __construct($db, $mysoc, $invoice)
 	{
 		$this->db = $db;
 		$this->root = new SimpleXMLElement(self::xml_skeleton);
 		$this->mysoc = $mysoc;
-	}
-
-	public function loadInvoice(Facture $invoice)
-	{
-		// do stuff
-		$this->root->addChild("invoiceNumber", $invoice->ref);
-		$date_creation = new DateTime();
-		$date_creation->setTimestamp($invoice->date_creation);
-		$this->root->addChild("invoiceIssueDate", $date_creation->format('Y-m-d'));
-		$invoiceNode = $this->root->addChild("invoiceMain")->addChild("invoice");
-		$invoiceHead = $invoiceNode->addChild("invoiceHead");
-		$this->addSupplierInfo($invoiceHead->addChild("supplierInfo"));
-
-
-		return $this;
+		$this->invoice = $invoice;
 	}
 
 	public function build()
 	{
-		return $this->root->asXML();
+		$this->root->addChild("invoiceNumber", $this->invoice->ref);
+		$date_creation = new DateTime();
+		$date_creation->setTimestamp($this->invoice->date_creation);
+		$this->root->addChild("invoiceIssueDate", $date_creation->format('Y-m-d'));
+		$invoiceNode = $this->root->addChild("invoiceMain")->addChild("invoice");
+		$invoiceHead = $invoiceNode->addChild("invoiceHead");
+		$this->addSupplierInfo($invoiceHead->addChild("supplierInfo"));
+		$this->addCustomerInfo($invoiceHead->addChild("customerInfo"));
+		return $this;
 	}
 
 	public function pprint() {
@@ -63,5 +60,24 @@ XML;
 		$address->addChild("countryCode", $country->code);
 		$address->addChild("postalCode", $this->mysoc->zip);
 		$address->addChild("city", $this->mysoc->town);
+		$address->addChild("streetName", $this->mysoc->address);
+		// publicPlaceCategory
+		// number
+		// floor
+		// door
+		$bac = new Account($this->db);
+		$bac->fetch($this->invoice->fk_account);
+		$node->addChild("supplierBankAccountNumber", $bac->number);
+	}
+
+	private function addCustomerInfo($node) {
+		$soc = new Societe($this->db);
+		$soc->fetch($this->invoice->socid);
+		$tva = explode("-", $soc->tva_intra);
+		$taxNumber = $node->addChild("customerTaxNumber");
+		$taxNumber->addChild("taxpayerId", $tva[0]);
+		$taxNumber->addChild("vatCode", $tva[1]);
+		$taxNumber->addChild("countyCode", $tva[2]);
+		$node->addChild("customerName", $soc->name);
 	}
 }

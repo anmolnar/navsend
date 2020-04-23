@@ -81,11 +81,10 @@ dol_include_once("/custom/navsend/class/navinvoicexmlbuilder.class.php");
 global $mysoc;
 
 $f = new Facture($db);
-$f->fetch(7);
+$f->fetch(2);
 
-$xml = new NavInvoiceXmlBuilder($db, $mysoc);
-$xml->loadInvoice($f);
-
+$xml = new NavInvoiceXmlBuilder($db, $mysoc, $f);
+$xml->build();
 $xml->pprint();
 
 // Example for inserting creating object in database
