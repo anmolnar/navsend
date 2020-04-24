@@ -81,7 +81,7 @@ dol_include_once("/custom/navsend/class/navinvoicexmlbuilder.class.php");
 global $mysoc;
 
 $f = new Facture($db);
-$f->fetch(2);
+$f->fetch(8);
 
 $xml = new NavInvoiceXmlBuilder($db, $mysoc, $f);
 $xml->build();

@@ -5,6 +5,30 @@ require_once __DIR__ . "/../../../core/class/ccountry.class.php";
 require_once __DIR__ . "/../../../compta/bank/class/account.class.php";
 require_once __DIR__ . "/../../../societe/class/societe.class.php";
 
+class Vat {
+	public $tx;
+	public $vatRateNetAmount = 0;
+	public $vatRateNetAmountHUF = 0;
+	public $vatRateVatAmount = 0;
+	public $vatRateVatAmountHUF = 0;
+	public $vatRateGrossAmount = 0;
+	public $vatRateGrossAmountHUF = 0;
+
+	public function __construct($tx)
+	{
+		$this->tx = $tx;
+	}
+
+	public function update($ligne) { /** @var FactureLigne $ligne */
+		$this->vatRateNetAmount += $ligne->total_ht;
+		$this->vatRateNetAmountHUF += $ligne->total_ht;
+		$this->vatRateVatAmount += $ligne->total_tva;
+		$this->vatRateVatAmountHUF += $ligne->total_tva;
+		$this->vatRateGrossAmount += $ligne->total_ttc;
+		$this->vatRateGrossAmountHUF += $ligne->total_ttc;
+	}
+}
+
 class NavInvoiceXmlBuilder
 {
 	const DATE_FORMAT = "Y-m-d";
@@ -18,6 +42,7 @@ XML;
 	private $root;
 	private $mysoc;
 	private $invoice; /** @var Facture $invoice */
+	private $vat = array();
 
 	public function __construct($db, $mysoc, $invoice) {
 		$this->db = $db;
@@ -42,6 +67,7 @@ XML;
 		$detail->addChild("invoiceAppearance", "PAPER");
 		$detail->addChild("additionalInvoiceData"); // TODO
 		$this->addInvoiceLines($invoiceNode->addChild("invoiceLines"));
+		$this->addSummary($invoiceNode->addChild("invoiceSummary"));
 		return $this;
 	}
 
@@ -72,6 +98,14 @@ XML;
 	private function addInvoiceLines($node) {
 		$i = 1;
 		foreach ($this->invoice->lines as $ligne) { /** @var FactureLigne $ligne */
+			if (array_key_exists($ligne->tva_tx, $this->vat)) {
+				$tva = $this->vat[$ligne->tva_tx];
+			} else {
+				$tva = new Vat($ligne->tva_tx);
+				$this->vat[$ligne->tva_tx] = $tva;
+			}
+			$tva->update($ligne);
+
 			$line = $node->addChild("line");
 			$line->addChild("lineNumber", $i);
 			$line->addChild("productCodes"); // TODO
@@ -99,7 +133,23 @@ XML;
 
 			$i++;
 		}
+	}
 
+	private function addSummary($node) {
+		$normal = $node->addChild("summaryNormal");
+		foreach($this->vat as $tx => $tva) { /** @var Vat $tva */
+			$summary = $normal->addChild("summaryByVatRate");
+			$summary->addChild("vatRate")->addChild("vatPercentage", $tx / 100);
+			$net = $summary->addChild("vatRateNetData");
+			$net->addChild("vatRateNetAmount", $tva->vatRateNetAmount);
+			$net->addChild("vatRateNetAmountHUF", $tva->vatRateNetAmountHUF);
+			$vat = $summary->addChild("vatRateVatData");
+			$vat->addChild("vatRateVatAmount", $tva->vatRateVatAmount);
+			$vat->addChild("vatRateVatAmountHUF", $tva->vatRateVatAmountHUF);
+			$gross = $summary->addChild("vatRateGrossData");
+			$gross->addChild("vatRateGrossAmount", $tva->vatRateGrossAmount);
+			$gross->addChild("vatRateGrossAmountHUF", $tva->vatRateGrossAmountHUF);
+		}
 	}
 
 	private function explodeTaxNumber($node, $tva_intra) {
