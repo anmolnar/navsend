@@ -150,6 +150,13 @@ XML;
 			$gross->addChild("vatRateGrossAmount", $tva->vatRateGrossAmount);
 			$gross->addChild("vatRateGrossAmountHUF", $tva->vatRateGrossAmountHUF);
 		}
+		$normal->addChild("invoiceNetAmount", $this->invoice->multicurrency_total_ht);
+		$normal->addChild("invoiceNetAmountHUF", $this->invoice->multicurrency_total_ht);
+		$normal->addChild("invoiceVatAmount", $this->invoice->multicurrency_total_tva);
+		$normal->addChild("invoiceVatAmountHUF", $this->invoice->multicurrency_total_tva);
+		$grossData = $node->addChild("summaryGrossData");
+		$grossData->addChild("invoiceGrossAmount", $this->invoice->multicurrency_total_ttc);
+		$grossData->addChild("invoiceGrossAmountHUF", $this->invoice->multicurrency_total_ttc);
 	}
 
 	private function explodeTaxNumber($node, $tva_intra) {
