@@ -79,9 +79,8 @@ dol_include_once("/compta/facture/class/facture.class.php");
 dol_include_once("/custom/navsend/class/navinvoicexmlbuilder.class.php");
 
 global $mysoc;
-
 $f = new Facture($db);
-$f->fetch(8);
+$f->fetch(10);
 
 $xml = new NavInvoiceXmlBuilder($db, $mysoc, $f);
 $xml->build();

@@ -114,21 +114,21 @@ XML;
 			$line->addChild("lineDescription", $ligne->desc);
 			$line->addChild("quantity", $ligne->qty);
 			$line->addChild("unitOfMeasure");
-			$line->addChild("unitPrice", $ligne->subprice);
+			$line->addChild("unitPrice", $ligne->multicurrency_subprice);
 
 			$amounts = $line->addChild("lineAmountsNormal");
 
 			$net_amount = $amounts->addChild("lineNetAmountData");
-			$net_amount->addChild("lineNetAmount", $ligne->total_ht);
+			$net_amount->addChild("lineNetAmount", $ligne->multicurrency_total_ht);
 			$net_amount->addChild("lineNetAmountHUF", $ligne->total_ht);
 
 			$amounts->addChild("lineVatRate")->addChild("vatPercentage", $ligne->tva_tx / 100);
 			$vatdata = $amounts->addChild("lineVatData");
-			$vatdata->addChild("lineVatAmount", $ligne->total_tva);
+			$vatdata->addChild("lineVatAmount", $ligne->multicurrency_total_tva);
 			$vatdata->addChild("lineVatAmountHUF", $ligne->total_tva);
 
 			$gross = $amounts->addChild("lineGrossAmountData");
-			$gross->addChild("lineGrossAmountNormal", $ligne->total_ttc);
+			$gross->addChild("lineGrossAmountNormal", $ligne->multicurrency_total_ttc);
 			$gross->addChild("lineGrossAmountNormalHUF", $ligne->total_ttc);
 
 			$i++;
@@ -151,12 +151,12 @@ XML;
 			$gross->addChild("vatRateGrossAmountHUF", $tva->vatRateGrossAmountHUF);
 		}
 		$normal->addChild("invoiceNetAmount", $this->invoice->multicurrency_total_ht);
-		$normal->addChild("invoiceNetAmountHUF", $this->invoice->multicurrency_total_ht);
+		$normal->addChild("invoiceNetAmountHUF", $this->invoice->total_ht);
 		$normal->addChild("invoiceVatAmount", $this->invoice->multicurrency_total_tva);
-		$normal->addChild("invoiceVatAmountHUF", $this->invoice->multicurrency_total_tva);
+		$normal->addChild("invoiceVatAmountHUF", $this->invoice->total_tva);
 		$grossData = $node->addChild("summaryGrossData");
 		$grossData->addChild("invoiceGrossAmount", $this->invoice->multicurrency_total_ttc);
-		$grossData->addChild("invoiceGrossAmountHUF", $this->invoice->multicurrency_total_ttc);
+		$grossData->addChild("invoiceGrossAmountHUF", $this->invoice->total_ttc);
 	}
 
 	private function explodeTaxNumber($node, $tva_intra) {
