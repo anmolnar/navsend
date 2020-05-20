@@ -60,16 +60,20 @@ XML;
 		$this->addCustomerInfo($invoiceHead->addChild("customerInfo"));
 		$detail = $invoiceHead->addChild("invoiceDetail");
 		$detail->addChild("invoiceCategory", $this->getInvoiceCategory($this->invoice->type));
-		$detail->addChild("invoiceDeliveryDate");
+		$detail->addChild("invoiceDeliveryDate", $this->getFormattedDate($this->invoice->date_lim_reglement));
 		$detail->addChild("currencyCode", $this->invoice->multicurrency_code);
 		$detail->addChild("exchangeRate", $this->invoice->multicurrency_tx);
 		$detail->addChild("paymentDate", $this->getFormattedDate($this->invoice->date_lim_reglement));
 		$detail->addChild("invoiceAppearance", "PAPER");
-		$detail->addChild("additionalInvoiceData"); // TODO
+		//$detail->addChild("additionalInvoiceData"); // TODO
 		$this->addInvoiceLines($invoiceNode->addChild("invoiceLines"));
 		$this->addSummary($invoiceNode->addChild("invoiceSummary"));
 		return $this;
-	}
+    }
+    
+    public function getXml() {
+        return $this->root;
+    }
 
 	public function pprint() {
 		$dom = dom_import_simplexml($this->root)->ownerDocument;
@@ -108,12 +112,12 @@ XML;
 
 			$line = $node->addChild("line");
 			$line->addChild("lineNumber", $i);
-			$line->addChild("productCodes"); // TODO
+			//$line->addChild("productCodes"); // TODO
 			$line->addChild("lineExpressionIndicator", "true");
 			$line->addChild("lineNatureIndicator", $ligne->product_type == 0 ? "PRODUCT" : "SERVICE");
 			$line->addChild("lineDescription", $ligne->desc);
 			$line->addChild("quantity", $ligne->qty);
-			$line->addChild("unitOfMeasure");
+			$line->addChild("unitOfMeasure", "PIECE");
 			$line->addChild("unitPrice", $ligne->multicurrency_subprice);
 
 			$amounts = $line->addChild("lineAmountsNormal");
@@ -173,7 +177,8 @@ XML;
 		$address->addChild("countryCode", $country->code);
 		$address->addChild("postalCode", $soc->zip);
 		$address->addChild("city", $soc->town);
-		$address->addChild("streetName", $soc->address);
+        $address->addChild("streetName", $soc->address);
+        $address->addChild("publicPlaceCategory", "STREET");        
 		/* TODO
 		 * publicPlaceCategory
 		 * number
