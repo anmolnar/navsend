@@ -83,12 +83,20 @@ global $mysoc;
 $f = new Facture($db);
 $f->fetch(11);
 
+print '--- Building invoice xml'."\n";
 $xml = new NavInvoiceXmlBuilder($db, $mysoc, $f);
 $xml->build();
 
-$sender = new NavInvoiceSender($xml->getXml());
+print '--- Validating invoice'."\n";
+$sender = new NavInvoiceSender($db, $user, $xml);
 $sender->validate();
 
+print '--- Sending invoice'."\n";
+try {
+    $sender->send();
+} catch(NavSendException $ex) {
+    print $ex->getMessage();
+}
 
 // Example for inserting creating object in database
 /*

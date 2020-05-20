@@ -70,14 +70,30 @@ class NavResult extends CommonObject
 		'ref' => array('type'=>'varchar(128)', 'label'=>'Ref', 'enabled'=>1, 'position'=>10, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'comment'=>"Reference of object"),
 		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>1, 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
 		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>1, 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
-		'result' => array('type'=>'smallint', 'label'=>'Result', 'enabled'=>1, 'position'=>50, 'notnull'=>1, 'visible'=>-1, 'arrayofkeyval'=>array('0'=>'Sent OK', '1'=>'In Transit', '2'=>'Error'),),
+		'result' => array('type'=>'smallint', 'label'=>'Result', 'enabled'=>1, 'position'=>50, 'notnull'=>1, 'visible'=>-1, 'arrayofkeyval'=>array('0'=>'Sent OK', '1'=>'In Transit', '2'=>'Hiba'),),
+		'message' => array('type'=>'text', 'label'=>'Message', 'enabled'=>1, 'position'=>100, 'notnull'=>0, 'visible'=>1,),
+		'transaction_id' => array('type'=>'varchar(128)', 'label'=>'Transaction ID', 'enabled'=>1, 'position'=>150, 'notnull'=>0, 'visible'=>1,),
 	);
 	public $rowid;
 	public $ref;
 	public $date_creation;
 	public $tms;
 	public $result;
+	public $message;
+	public $transaction_id;
 	// END MODULEBUILDER PROPERTIES
+    
+    const RESULT_GENERATE = 1;
+
+    const RESULT_VALIDATED = 2;
+    
+    const RESULT_INTRANSIT = 3;
+    
+    const RESULT_SENTOK = 4;
+
+    const RESULT_INVALID = 5;
+
+    const RESULT_SENTERROR = 6;
 
 	/**
 	 * Constructor

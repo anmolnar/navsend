@@ -20,6 +20,8 @@ CREATE TABLE llx_navsend_navresult(
 	ref varchar(128) NOT NULL, 
 	date_creation datetime NOT NULL, 
 	tms timestamp, 
-	result smallint NOT NULL
+	result smallint NOT NULL, 
+	message text, 
+	transaction_id varchar(128)
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

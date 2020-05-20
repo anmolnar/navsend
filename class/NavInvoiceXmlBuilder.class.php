@@ -75,6 +75,10 @@ XML;
         return $this->root;
     }
 
+    public function getInvoice() {
+        return $this->invoice;
+    }
+
 	public function pprint() {
 		$dom = dom_import_simplexml($this->root)->ownerDocument;
 		$dom->formatOutput = true;
