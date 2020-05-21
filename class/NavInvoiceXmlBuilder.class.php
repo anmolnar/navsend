@@ -65,12 +65,12 @@ XML;
 		$detail->addChild("exchangeRate", $this->invoice->multicurrency_tx);
 		$detail->addChild("paymentDate", $this->getFormattedDate($this->invoice->date_lim_reglement));
 		$detail->addChild("invoiceAppearance", "PAPER");
-		//$detail->addChild("additionalInvoiceData"); // TODO
+		$detail->addChild("additionalInvoiceData"); // TODO
 		$this->addInvoiceLines($invoiceNode->addChild("invoiceLines"));
 		$this->addSummary($invoiceNode->addChild("invoiceSummary"));
 		return $this;
     }
-    
+
     public function getXml() {
         return $this->root;
     }
@@ -182,7 +182,7 @@ XML;
 		$address->addChild("postalCode", $soc->zip);
 		$address->addChild("city", $soc->town);
         $address->addChild("streetName", $soc->address);
-        $address->addChild("publicPlaceCategory", "STREET");        
+        $address->addChild("publicPlaceCategory", "STREET");
 		/* TODO
 		 * publicPlaceCategory
 		 * number

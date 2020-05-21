@@ -16,7 +16,7 @@ class NavInvoiceSender {
         "signKey" => "a9-a8da-0a5b0826222b2YJVI80O7P4J",
         "exchangeKey" => "2efc2YJVI80OBAIZ",
     );
-    
+
     private $softwareData = array(
         "softwareId" => "DOLIBARR-NAVSEND-1",
         "softwareName" => "DolibarrNavsend",
@@ -31,69 +31,103 @@ class NavInvoiceSender {
     private $db;
     private $user;
     private $navResult;
-    private $invoice;
+    private $builder; /** @var NavInvoiceXmlBuilder $builder */
     private $reporter;
     private $invoiceXml;
-    private $errorMsg;    
+    private $errorMsg;
 
-    public function __construct($db, $user, $invoice) {
+    public function __construct($db, $user, $builder) {
         $this->db = $db;
         $this->user = $user;
         $this->navResult = new NavResult($db);
-        $this->invoice = $invoice;
+        $this->builder = $builder;
         $config = new NavOnlineInvoice\Config($this->apiUrl, $this->userData, $this->softwareData);
         $config->setCurlTimeout(70); // 70 másodperces cURL timeout (NAV szerver hívásnál), opcionális
         $this->reporter = new NavOnlineInvoice\Reporter($config);
     }
 
     public function validate() {
-        dol_syslog(__METHOD__." Validating invoice ref ".$this->invoice->getInvoice()->ref, LOG_INFO);
-        $xml = $this->invoice->getXml();
-        $errorMsg = NavOnlineInvoice\Reporter::getInvoiceValidationError($xml);
-        if ($errorMsg) {
-            $this->errorMsg = $errorMsg;
-            return false;
+        dol_syslog(__METHOD__." Validating invoice ref ".$this->builder->getInvoice()->ref, LOG_INFO);
+        $this->errorMsg = NavOnlineInvoice\Reporter::getInvoiceValidationError($this->invoiceXml);
+        if ($this->errorMsg) {
+            throw new NavSendException("Validation error: ".$this->errorMsg);
         } else {
-            $this->invoiceXml = $xml;
             return true;
         }
     }
 
     public function send() {
-        $facture = $this->invoice->getInvoice();
+        $facture = $this->builder->getInvoice(); /** @var Facture $facture */
         dol_syslog(__METHOD__." Sending invoice to NAV ref: ".$facture->ref, LOG_INFO);
-        $this->navResult->ref = $facture->ref;
-        $this->navResult->result = NavResult::RESULT_GENERATE;
-        $this->navResultCreate();
-        if (!$this->validate()) {
-            $this->navResult->result = NavResult::RESULT_INVALID;
-            $this->navResult->message = $this->errorMsg;
-            $this->navResultUpdate();
-        } else {
-            $this->navResult->result = NavResult::RESULT_VALIDATED;
-            $this->navResult->message = "";
-            $this->navResultUpdate();
-        }
-        // Az $invoiceXml tartalmazza a számla (szakmai) SimpleXMLElement objektumot
-        //$transactionId = $this->reporter->manageInvoice($this->invoice->getXml(), "CREATE");
-        //print "Tranzakciós azonosító a státusz lekérdezéshez: " . $transactionId;
 
-        return true;
+        try {
+			// 1. GENERATE
+			$id = $this->navResult->fetch(null, $facture->ref);
+			print("Id = $id\n");
+			if ($id < 0) {
+				dol_print_error($this->db, $this->navResult->error);
+				throw new Exception("Unable to query db");
+			} else if ($id > 0) {
+				throw new Exception("Invoice ref $facture->ref has already sent");
+			}
+
+			$this->navResult->ref = $facture->ref;
+			$this->navResult->result = NavResult::RESULT_GENERATE;
+			$this->navResult->errored = 0;
+			$this->navResultCreate();
+
+			$this->invoiceXml = $this->builder->build()->getXml();
+
+			// 2. VALIDATE
+
+			$this->navResult->result = NavResult::RESULT_VALIDATE;
+			$this->navResult->message = "OK";
+			$this->navResult->errored = 0;
+			$this->navResult->xml = $this->invoiceXml->asXML();
+			$this->navResultUpdate();
+
+			$this->validate();
+
+			// 3. SEND
+
+			$this->navResult->result = NavResult::RESULT_INTRANSIT;
+			$this->navResult->message = "OK";
+			$this->navResult->errored = 0;
+			$this->navResultUpdate();
+
+			// Az $invoiceXml tartalmazza a számla (szakmai) SimpleXMLElement objektumot
+			//$transactionId = $this->reporter->manageInvoice($this->invoice->getXml(), "CREATE");
+			//print "Tranzakciós azonosító a státusz lekérdezéshez: " . $transactionId;
+
+			$this->navResult->result = NavResult::RESULT_SENTOK;
+			$this->navResult->message = "OK";
+			$this->navResult->errored = 0;
+			$this->navResultUpdate();
+
+			return true;
+		} catch (NavSendException $ex) {
+			$this->navResult->errored = 1;
+			$this->navResult->message = $ex->getMessage();
+			$this->navResultUpdate();
+			throw $ex;
+		}
     }
 
     private function navResultCreate() {
         $id = $this->navResult->create($this->user);
         if ($id < 0) {
             dol_print_error($this->db, $this->navResult->error);
-            throw new NavSendException("Unable to write db");
+            throw new Exception("Unable to write db");
         }
+        $this->navResult->fetch($id);
     }
 
     private function navResultUpdate() {
+    	$this->navResult->tms = null;
         $result = $this->navResult->update($this->user);
         if ($result < 0) {
             dol_print_error($this->db, $this->navResult->error);
-            throw new NavSendException("Unable to update db");
+            throw new Exception("Unable to update db");
         }
     }
 }

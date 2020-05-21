@@ -73,6 +73,8 @@ class NavResult extends CommonObject
 		'result' => array('type'=>'smallint', 'label'=>'Result', 'enabled'=>1, 'position'=>50, 'notnull'=>1, 'visible'=>-1, 'arrayofkeyval'=>array('0'=>'Sent OK', '1'=>'In Transit', '2'=>'Hiba'),),
 		'message' => array('type'=>'text', 'label'=>'Message', 'enabled'=>1, 'position'=>100, 'notnull'=>0, 'visible'=>1,),
 		'transaction_id' => array('type'=>'varchar(128)', 'label'=>'Transaction ID', 'enabled'=>1, 'position'=>150, 'notnull'=>0, 'visible'=>1,),
+		'errored' => array('type'=>'boolean', 'label'=>'Errored', 'enabled'=>1, 'position'=>200, 'notnull'=>1, 'visible'=>-1,),
+		'xml' => array('type'=>'text', 'label'=>'Invoice XML', 'enabled'=>1, 'position'=>250, 'notnull'=>0, 'visible'=>1,),
 	);
 	public $rowid;
 	public $ref;
@@ -81,19 +83,17 @@ class NavResult extends CommonObject
 	public $result;
 	public $message;
 	public $transaction_id;
+	public $errored;
+	public $xml;
 	// END MODULEBUILDER PROPERTIES
-    
+
     const RESULT_GENERATE = 1;
 
-    const RESULT_VALIDATED = 2;
-    
+    const RESULT_VALIDATE = 2;
+
     const RESULT_INTRANSIT = 3;
-    
+
     const RESULT_SENTOK = 4;
-
-    const RESULT_INVALID = 5;
-
-    const RESULT_SENTERROR = 6;
 
 	/**
 	 * Constructor
