@@ -23,7 +23,7 @@ CREATE TABLE llx_navsend_navresult(
 	result smallint NOT NULL, 
 	message text, 
 	transaction_id varchar(128), 
-	errored boolean NOT NULL, 
-	xml text
+	xml text, 
+	error_code varchar(255)
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

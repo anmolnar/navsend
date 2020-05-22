@@ -30,104 +30,83 @@ class NavInvoiceSender {
 
     private $db;
     private $user;
-    private $navResult;
     private $builder; /** @var NavInvoiceXmlBuilder $builder */
     private $reporter;
     private $invoiceXml;
-    private $errorMsg;
 
     public function __construct($db, $user, $builder) {
         $this->db = $db;
         $this->user = $user;
-        $this->navResult = new NavResult($db);
         $this->builder = $builder;
         $config = new NavOnlineInvoice\Config($this->apiUrl, $this->userData, $this->softwareData);
         $config->setCurlTimeout(70); // 70 másodperces cURL timeout (NAV szerver hívásnál), opcionális
         $this->reporter = new NavOnlineInvoice\Reporter($config);
     }
 
-    public function validate() {
-        dol_syslog(__METHOD__." Validating invoice ref ".$this->builder->getInvoice()->ref, LOG_INFO);
-        $this->errorMsg = NavOnlineInvoice\Reporter::getInvoiceValidationError($this->invoiceXml);
-        if ($this->errorMsg) {
-            throw new NavSendException("Validation error: ".$this->errorMsg);
-        } else {
-            return true;
-        }
-    }
-
     public function send() {
-        $facture = $this->builder->getInvoice(); /** @var Facture $facture */
-        dol_syslog(__METHOD__." Sending invoice to NAV ref: ".$facture->ref, LOG_INFO);
+		$ref = $this->builder->getRef();
+        dol_syslog(__METHOD__." Sending invoice ref: ".$ref, LOG_INFO);
 
         try {
-			// 1. GENERATE
-			$id = $this->navResult->fetch(null, $facture->ref);
-			print("Id = $id\n");
-			if ($id < 0) {
-				dol_print_error($this->db, $this->navResult->error);
-				throw new Exception("Unable to query db");
-			} else if ($id > 0) {
-				throw new Exception("Invoice ref $facture->ref has already sent");
-			}
-
-			$this->navResult->ref = $facture->ref;
-			$this->navResult->result = NavResult::RESULT_GENERATE;
-			$this->navResult->errored = 0;
-			$this->navResultCreate();
+			// 1. BUILD
 
 			$this->invoiceXml = $this->builder->build()->getXml();
 
-			// 2. VALIDATE
-
-			$this->navResult->result = NavResult::RESULT_VALIDATE;
-			$this->navResult->message = "OK";
-			$this->navResult->errored = 0;
-			$this->navResult->xml = $this->invoiceXml->asXML();
-			$this->navResultUpdate();
-
-			$this->validate();
-
-			// 3. SEND
-
-			$this->navResult->result = NavResult::RESULT_INTRANSIT;
-			$this->navResult->message = "OK";
-			$this->navResult->errored = 0;
-			$this->navResultUpdate();
+			// 2. SEND
 
 			// Az $invoiceXml tartalmazza a számla (szakmai) SimpleXMLElement objektumot
-			//$transactionId = $this->reporter->manageInvoice($this->invoice->getXml(), "CREATE");
-			//print "Tranzakciós azonosító a státusz lekérdezéshez: " . $transactionId;
+			$transactionId = $this->reporter->manageInvoice($this->invoiceXml, "CREATE");
 
-			$this->navResult->result = NavResult::RESULT_SENTOK;
-			$this->navResult->message = "OK";
-			$this->navResult->errored = 0;
-			$this->navResultUpdate();
+			// 3. PERSIST
 
+			$this->resultCreateOrUpdate($ref, NavResult::RESULT_SENTOK, "OK", "", $transactionId);
+
+			dol_syslog("Invoice ref $ref has been successfully sent. Transaction ID = $transactionId", LOG_INFO);
 			return true;
-		} catch (NavSendException $ex) {
-			$this->navResult->errored = 1;
-			$this->navResult->message = $ex->getMessage();
-			$this->navResultUpdate();
-			throw $ex;
+		} catch (NavOnlineInvoice\XsdValidationError $ex) {
+        	dol_syslog(__METHOD__." ".$ex->getMessage(), LOG_ERR);
+			$this->resultCreateOrUpdate($ref, NavResult::RESULT_XSDERROR, $ex->getMessage(), "", "");
+		} catch (NavOnlineInvoice\CurlError | NavOnlineInvoice\HttpResponseError $ex) {
+			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_ERR);
+			$this->resultCreateOrUpdate($ref, NavResult::RESULT_NETERROR, $ex->getMessage(), "", "");
+		} catch (NavOnlineInvoice\GeneralErrorResponse | NavOnlineInvoice\GeneralExceptionResponse $ex) {
+			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_ERR);
+			$this->resultCreateOrUpdate($ref, NavResult::RESULT_NAVERROR, $ex->getMessage(), $ex->getErrorCode(), "");
+		} catch (Exception $ex) {
+			dol_syslog(__METHOD__." ".$ex->getMessage(), LOG_ERR);
+        	$this->resultCreateOrUpdate($ref, NavResult::RESULT_ERROR, $ex->getMessage(), "", "");
+		} finally {
+        	$this->db->commit();
 		}
     }
 
-    private function navResultCreate() {
-        $id = $this->navResult->create($this->user);
-        if ($id < 0) {
-            dol_print_error($this->db, $this->navResult->error);
-            throw new Exception("Unable to write db");
-        }
-        $this->navResult->fetch($id);
-    }
+    private function resultCreateOrUpdate($ref, $result, $msg, $errored, $tid) {
+		$nav = new NavResult($this->db);
+		$needCreate = false;
+		$id = $nav->fetch(null, $ref);
+		if ($id < 0) {
+			dol_print_error($this->db, $nav->error);
+			throw new Exception("Unable to query db");
+		} else if ($id == 0) {
+			$needCreate = true;
+		}
 
-    private function navResultUpdate() {
-    	$this->navResult->tms = null;
-        $result = $this->navResult->update($this->user);
-        if ($result < 0) {
-            dol_print_error($this->db, $this->navResult->error);
-            throw new Exception("Unable to update db");
-        }
-    }
+		$nav->tms = dol_now();
+		$nav->ref = $ref;
+    	$nav->result = $result;
+    	$nav->message = $msg;
+    	$nav->error_code = $errored;
+    	$nav->xml = $this->invoiceXml->asXML();
+    	$nav->transaction_id = $tid;
+
+    	if ($needCreate) {
+    		$result = $nav->create($this->user);
+		} else {
+    		$result = $nav->update($this->user);
+		}
+		if ($result < 0) {
+			dol_print_error($this->db, $nav->error);
+			throw new Exception("Unable to write db");
+		}
+	}
 }

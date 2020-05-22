@@ -19,7 +19,8 @@
  */
 
 require_once DOL_DOCUMENT_ROOT.'/core/triggers/dolibarrtriggers.class.php';
-
+require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavInvoiceXmlBuilder.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavInvoiceSender.class.php';
 
 /**
  *  Class of triggers for NavSend module
@@ -205,12 +206,13 @@ class InterfaceNavSendTriggers extends DolibarrTriggers
 
             //case 'BILL_MODIFY':
             case 'BILL_VALIDATE':
-            	dol_syslog("BILL validated: id=".$object->id . ", ref=" . $object->ref . ", newref=" . $object->newref . ", status = " . $object->statut);
-            	$invoice = $object; /** @var Facture $invoice */
-				foreach ($invoice->lines as $line) {
-					dol_syslog("Line id=$line->id, product_ref=$line->product_ref, product_label=$line->product_label");
-				}
-            	return 1;
+            	global $mysoc;
+				dol_syslog("BILL validated: id=" . $object->id . ", ref=" . $object->ref . ", newref=" . $object->newref . ", status = " . $object->statut);
+				$f = $object; /** @var Facture $f */
+				$builder = new NavInvoiceXmlBuilder($this->db, $mysoc, $f);
+				$sender = new NavInvoiceSender($this->db, $user, $builder);
+				$sender->send();
+				return 1;
 
 			case 'BILL_UNVALIDATE':
 				dol_syslog("BILL unvalidated: id=".$object->id . ", ref=" . $object->ref . ", newref=" . $object->newref . ", status = " . $object->statut);

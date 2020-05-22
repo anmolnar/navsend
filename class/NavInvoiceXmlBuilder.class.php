@@ -46,13 +46,14 @@ XML;
 
 	public function __construct($db, $mysoc, $invoice) {
 		$this->db = $db;
-		$this->root = new SimpleXMLElement(self::xml_skeleton);
 		$this->mysoc = $mysoc;
 		$this->invoice = $invoice;
 	}
 
 	public function build()	{
-		$this->root->addChild("invoiceNumber", $this->invoice->ref);
+		$this->root = new SimpleXMLElement(self::xml_skeleton);
+		$this->vat = array();
+		$this->root->addChild("invoiceNumber", $this->getRef());
 		$this->root->addChild("invoiceIssueDate", $this->getFormattedDate($this->invoice->date_creation));
 		$invoiceNode = $this->root->addChild("invoiceMain")->addChild("invoice");
 		$invoiceHead = $invoiceNode->addChild("invoiceHead");
@@ -65,7 +66,7 @@ XML;
 		$detail->addChild("exchangeRate", $this->invoice->multicurrency_tx);
 		$detail->addChild("paymentDate", $this->getFormattedDate($this->invoice->date_lim_reglement));
 		$detail->addChild("invoiceAppearance", "PAPER");
-		$detail->addChild("additionalInvoiceData"); // TODO
+		//$detail->addChild("additionalInvoiceData"); // TODO
 		$this->addInvoiceLines($invoiceNode->addChild("invoiceLines"));
 		$this->addSummary($invoiceNode->addChild("invoiceSummary"));
 		return $this;
@@ -78,6 +79,10 @@ XML;
     public function getInvoice() {
         return $this->invoice;
     }
+
+    public function getRef() {
+		return empty($this->invoice->newref) ? $this->invoice->ref : $this->invoice->newref;
+	}
 
 	public function pprint() {
 		$dom = dom_import_simplexml($this->root)->ownerDocument;
