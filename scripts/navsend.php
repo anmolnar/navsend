@@ -84,13 +84,8 @@ $f = new Facture($db);
 $f->fetch(11);
 
 print '--- Sending invoice'."\n";
-try {
-	$builder = new NavInvoiceXmlBuilder($db, $mysoc, $f);
-	$sender = new NavInvoiceSender($db, $user, $builder);
-    $sender->send();
-} catch(Exception $ex) {
-    print $ex->getMessage() . "\n";
-}
+$sender = new NavInvoiceSender($db, $user);
+$sender->queryNavStatus();
 
 // Example for inserting creating object in database
 /*

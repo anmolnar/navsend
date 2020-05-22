@@ -87,6 +87,8 @@ class NavResult extends CommonObject
 	public $error_code;
 	// END MODULEBUILDER PROPERTIES
 
+	const RESULT_SAVED = 0;
+
     const RESULT_XSDERROR = 2;
 
     const RESULT_NETERROR = 3;

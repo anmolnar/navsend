@@ -30,27 +30,25 @@ class NavInvoiceSender {
 
     private $db;
     private $user;
-    private $builder; /** @var NavInvoiceXmlBuilder $builder */
     private $reporter;
     private $invoiceXml;
 
-    public function __construct($db, $user, $builder) {
+    public function __construct($db, $user) {
         $this->db = $db;
         $this->user = $user;
-        $this->builder = $builder;
         $config = new NavOnlineInvoice\Config($this->apiUrl, $this->userData, $this->softwareData);
         $config->setCurlTimeout(70); // 70 másodperces cURL timeout (NAV szerver hívásnál), opcionális
         $this->reporter = new NavOnlineInvoice\Reporter($config);
     }
 
-    public function send() {
-		$ref = $this->builder->getRef();
+    public function send($builder) {
+		$ref = $builder->getRef();
         dol_syslog(__METHOD__." Sending invoice ref: ".$ref, LOG_INFO);
 
         try {
 			// 1. BUILD
 
-			$this->invoiceXml = $this->builder->build()->getXml();
+			$this->invoiceXml = $builder->build()->getXml();
 
 			// 2. SEND
 
@@ -80,13 +78,48 @@ class NavInvoiceSender {
 		}
     }
 
+    public function queryNavStatus() {
+		$nav = new NavResult($this->db);
+		$result = $nav->fetchAll('','', 100,0, array("result" => 4));
+
+		if (!is_array($result)) {
+			dol_print_error($this->db, $nav->error);
+			throw new NavSendException("Unable to query db");
+		}
+
+		try {
+			foreach ($result as $n) { /** @var NavResult $n */
+				$transactionId = $n->transaction_id;
+				$statusXml = $this->reporter->queryTransactionStatus($transactionId); /** @var SimpleXMLElement $statusXml */
+				$result = $statusXml->processingResults->processingResult[0];
+				$n->error_code = $result->invoiceStatus;
+				$validationMessages = $result->businessValidationMessages;
+				if (!empty($validationMessages)) {
+					$n->error_code = $validationMessages->validationErrorCode;
+					$n->message = $validationMessages->message;
+				} else if ($result->invoiceStatus === "DONE") {
+					$n->result = NavResult::RESULT_SAVED;
+				}
+				if ($result->invoiceStatus == "ABORTED") {
+					$n->result = NavResult::RESULT_NAVERROR;
+				}
+				$n->tms = dol_now();
+				$n->update($this->user);
+			}
+		} catch(Exception $ex) {
+			print get_class($ex) . ": " . $ex->getMessage();
+		} finally {
+			$this->db->commit();
+		}
+	}
+
     private function resultCreateOrUpdate($ref, $result, $msg, $errored, $tid) {
 		$nav = new NavResult($this->db);
 		$needCreate = false;
 		$id = $nav->fetch(null, $ref);
 		if ($id < 0) {
 			dol_print_error($this->db, $nav->error);
-			throw new Exception("Unable to query db");
+			throw new NavSendException("Unable to query db");
 		} else if ($id == 0) {
 			$needCreate = true;
 		}
@@ -106,7 +139,7 @@ class NavInvoiceSender {
 		}
 		if ($result < 0) {
 			dol_print_error($this->db, $nav->error);
-			throw new Exception("Unable to write db");
+			throw new NavSendException("Unable to write db");
 		}
 	}
 }

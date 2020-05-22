@@ -210,8 +210,8 @@ class InterfaceNavSendTriggers extends DolibarrTriggers
 				dol_syslog("BILL validated: id=" . $object->id . ", ref=" . $object->ref . ", newref=" . $object->newref . ", status = " . $object->statut);
 				$f = $object; /** @var Facture $f */
 				$builder = new NavInvoiceXmlBuilder($this->db, $mysoc, $f);
-				$sender = new NavInvoiceSender($this->db, $user, $builder);
-				$sender->send();
+				$sender = new NavInvoiceSender($this->db, $user);
+				$sender->send($builder);
 				return 1;
 
 			case 'BILL_UNVALIDATE':
