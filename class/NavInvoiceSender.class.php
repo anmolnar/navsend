@@ -42,8 +42,9 @@ class NavInvoiceSender {
     }
 
     public function send($builder) {
-		$ref = $builder->getRef();
-        dol_syslog(__METHOD__." Sending invoice ref: ".$ref, LOG_INFO);
+        $ref = $builder->getRef();
+        $modusz = $builder->createOrModify();
+        dol_syslog(__METHOD__." Sending invoice ref $ref modusz $modusz", LOG_INFO);
 
         try {
 			// 1. BUILD
@@ -53,7 +54,7 @@ class NavInvoiceSender {
 			// 2. SEND
 
 			// Az $invoiceXml tartalmazza a számla (szakmai) SimpleXMLElement objektumot
-			$transactionId = $this->reporter->manageInvoice($this->invoiceXml, "CREATE");
+			$transactionId = $this->reporter->manageInvoice($this->invoiceXml, $modusz);
 
 			// 3. PERSIST
 
@@ -85,33 +86,77 @@ class NavInvoiceSender {
 		if (!is_array($result)) {
 			dol_print_error($this->db, $nav->error);
 			throw new NavSendException("Unable to query db");
-		}
+        }
+        
+        if (count($result) <= 0) {
+            return;
+        }
 
-		try {
-			foreach ($result as $n) { /** @var NavResult $n */
-				$transactionId = $n->transaction_id;
-				$statusXml = $this->reporter->queryTransactionStatus($transactionId); /** @var SimpleXMLElement $statusXml */
-				$result = $statusXml->processingResults->processingResult[0];
-				$n->error_code = $result->invoiceStatus;
-				$validationMessages = $result->businessValidationMessages;
-				if (!empty($validationMessages)) {
-					$n->error_code = $validationMessages->validationErrorCode;
-					$n->message = $validationMessages->message;
-				} else if ($result->invoiceStatus === "DONE") {
-					$n->result = NavResult::RESULT_SAVED;
-				}
-				if ($result->invoiceStatus == "ABORTED") {
-					$n->result = NavResult::RESULT_NAVERROR;
-				}
-				$n->tms = dol_now();
-				$n->update($this->user);
-			}
-		} catch(Exception $ex) {
-			print get_class($ex) . ": " . $ex->getMessage();
+        dol_syslog(__METHOD__." Updating ".count($result)." row(s) in NAV result table", LOG_INFO);
+
+        foreach ($result as $n) { /** @var NavResult $n */
+            try {
+                dol_syslog(__METHOD__." Query NAV for invoice ref $n->ref with transaction id $n->transaction_id", LOG_INFO);
+                $transactionId = $n->transaction_id;
+                $statusXml = $this->reporter->queryTransactionStatus($transactionId); /** @var SimpleXMLElement $statusXml */
+                $result = $statusXml->processingResults->processingResult[0];
+                dol_syslog(__METHOD__." Invoice ref $n->ref NAV invoice status: ".$statusXml->asXML(), LOG_INFO);
+                $n->error_code = $result->invoiceStatus;
+                $validationMessages = $result->businessValidationMessages;
+                if (!empty($validationMessages)) {
+                    $n->error_code = $validationMessages->validationErrorCode;
+                    $n->message = $validationMessages->message;
+                } else if ($result->invoiceStatus == "DONE") {
+                    $n->result = NavResult::RESULT_SAVED;
+                }
+                if ($result->invoiceStatus == "ABORTED") {
+                    $n->result = NavResult::RESULT_NAVERROR;
+                }
+                $n->tms = dol_now();
+                $n->update($this->user);
+                dol_syslog(__METHOD__." Invoice ref $n->ref updated result to ".NavResult::resultToString($n->result), LOG_INFO);
+            } catch (Exception $ex) {
+                dol_syslog(__METHOD__." Error querying NAV status for invoice ref $n->ref: ".$ex->getMessage(), LOG_ERR);
+            }
+        }
+
+        $this->db->commit();
+    }
+    
+    public function sendAnnulment($builder) {
+        $ref = $builder->getRef();
+        dol_syslog(__METHOD__." Sending invoice annulment ref $ref", LOG_INFO);
+        try {
+  			// 1. BUILD
+
+			$this->invoiceXml = $builder->buildAnnulment()->getXml();
+
+			// 2. SEND
+
+            $transactionId = $this->reporter->manageAnnulment($this->invoiceXml);        
+
+            // 3. PERSIST
+
+			$this->resultCreateOrUpdate($ref, NavResult::RESULT_SENTOK, "OK", "", $transactionId);
+
+			dol_syslog("Invoice ref $ref annulment has been successfully sent. Transaction ID = $transactionId", LOG_INFO);
+			return true;
+		} catch (NavOnlineInvoice\XsdValidationError $ex) {
+        	dol_syslog(__METHOD__." ".$ex->getMessage(), LOG_ERR);
+			$this->resultCreateOrUpdate($ref, NavResult::RESULT_XSDERROR, $ex->getMessage(), "", "");
+		} catch (NavOnlineInvoice\CurlError | NavOnlineInvoice\HttpResponseError $ex) {
+			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_ERR);
+			$this->resultCreateOrUpdate($ref, NavResult::RESULT_NETERROR, $ex->getMessage(), "", "");
+		} catch (NavOnlineInvoice\GeneralErrorResponse | NavOnlineInvoice\GeneralExceptionResponse $ex) {
+			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_ERR);
+			$this->resultCreateOrUpdate($ref, NavResult::RESULT_NAVERROR, $ex->getMessage(), $ex->getErrorCode(), "");
+		} catch (Exception $ex) {
+			dol_syslog(__METHOD__." ".$ex->getMessage(), LOG_ERR);
+        	$this->resultCreateOrUpdate($ref, NavResult::RESULT_ERROR, $ex->getMessage(), "", "");
 		} finally {
-			$this->db->commit();
+        	$this->db->commit();
 		}
-	}
+    }
 
     private function resultCreateOrUpdate($ref, $result, $msg, $errored, $tid) {
 		$nav = new NavResult($this->db);
@@ -122,7 +167,9 @@ class NavInvoiceSender {
 			throw new NavSendException("Unable to query db");
 		} else if ($id == 0) {
 			$needCreate = true;
-		}
+        }
+        
+        $needCreate = true;
 
 		$nav->tms = dol_now();
 		$nav->ref = $ref;

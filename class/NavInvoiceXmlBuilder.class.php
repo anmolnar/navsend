@@ -32,11 +32,18 @@ class Vat {
 class NavInvoiceXmlBuilder
 {
 	const DATE_FORMAT = "Y-m-d";
-	const xml_skeleton = <<<XML
+    
+    const xml_skeleton = <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
 <InvoiceData xmlns="http://schemas.nav.gov.hu/OSA/2.0/data" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.nav.gov.hu/OSA/2.0/data invoiceData.xsd">
 </InvoiceData>
 XML;
+    
+    const xml_annulment_skeleton = <<<ANNUL
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<InvoiceAnnulment xmlns="http://schemas.nav.gov.hu/OSA/2.0/annul">
+</InvoiceAnnulment>    
+ANNUL;
 
 	private $db;
 	private $root;
@@ -56,6 +63,12 @@ XML;
 		$this->root->addChild("invoiceNumber", $this->getRef());
 		$this->root->addChild("invoiceIssueDate", $this->getFormattedDate($this->invoice->date_creation));
 		$invoiceNode = $this->root->addChild("invoiceMain")->addChild("invoice");
+		if ($this->createOrModify() == "MODIFY") {
+            $invoiceRef = $invoiceNode->addChild("invoiceReference");
+            $invoiceRef->addChild("originalInvoiceNumber", $this->getRef());
+            $invoiceRef->addChild("modifyWithoutMaster", "false");
+            $invoiceRef->addChild("modificationIndex", 1);
+		}
 		$invoiceHead = $invoiceNode->addChild("invoiceHead");
 		$this->addSupplierInfo($invoiceHead->addChild("supplierInfo"));
 		$this->addCustomerInfo($invoiceHead->addChild("customerInfo"));
@@ -72,17 +85,50 @@ XML;
 		return $this;
     }
 
+    public function buildAnnulment() {
+		$this->root = new SimpleXMLElement(self::xml_annulment_skeleton);
+        $this->root->addChild("annulmentReference", $this->getRef());
+        $this->root->addChild("annulmentTimestamp", date('Y-m-d\TH:i:s\Z', dol_now()));
+        $this->root->addChild("annulmentCode", "ERRATIC_DATA");
+        $this->root->addChild("annulmentReason", "create szamla annul");        
+        return $this;
+    }
+
+    /**
+     * Returns the root simple xml element which is being built here.
+     *
+     * @return SimpleXMLElement XML root node
+     */
     public function getXml() {
         return $this->root;
     }
 
+    /**
+     * Returns the original Facture (invoice) object which the builder is based on.
+     *
+     * @return Facture Invoice object
+     */
     public function getInvoice() {
         return $this->invoice;
     }
 
+    /**
+     * Determine invoice number (ref): 'newref' if not empty, otherwise 'ref'
+     *
+     * @return string Invoice number
+     */
     public function getRef() {
 		return empty($this->invoice->newref) ? $this->invoice->ref : $this->invoice->newref;
-	}
+    }
+
+    /**
+     * Does this invoice represent a Create (new invoice) or a Modify (alter existing invoice) operation?
+     *
+     * @return string CREATE or MODIFY
+     */
+    public function createOrModify() {
+        return "CREATE";
+    }
 
 	public function pprint() {
 		$dom = dom_import_simplexml($this->root)->ownerDocument;

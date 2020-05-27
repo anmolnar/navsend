@@ -99,6 +99,23 @@ class NavResult extends CommonObject
 
     const RESULT_NAVERROR = 6;
 
+    public static function resultToString($code) {
+        switch ($code) {
+            case NavResult::RESULT_SAVED:
+                return "RESULT_SAVED";
+            case NavResult::RESULT_XSDERROR:
+                return "RESULT_XSDERROR";
+            case NavResult::RESULT_NETERROR:
+                return "RESULT_NETERROR";
+            case NavResult::RESULT_SENTOK:
+                return "RESULT_SENTOK";
+            case NavResult::RESULT_ERROR:
+                return "RESULT_ERROR";
+            case NavResult::RESULT_NAVERROR:
+                return "RESULT_NAVERROR";
+        }
+    }
+
 	/**
 	 * Constructor
 	 *
