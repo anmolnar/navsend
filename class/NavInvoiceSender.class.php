@@ -87,7 +87,7 @@ class NavInvoiceSender {
 			dol_print_error($this->db, $nav->error);
 			throw new NavSendException("Unable to query db");
         }
-        
+
         if (count($result) <= 0) {
             return;
         }
@@ -99,14 +99,29 @@ class NavInvoiceSender {
                 dol_syslog(__METHOD__." Query NAV for invoice ref $n->ref with transaction id $n->transaction_id", LOG_INFO);
                 $transactionId = $n->transaction_id;
                 $statusXml = $this->reporter->queryTransactionStatus($transactionId); /** @var SimpleXMLElement $statusXml */
-                $result = $statusXml->processingResults->processingResult[0];
+
+                /* Invoice status */
+				$result = $statusXml->processingResults->processingResult[0];
                 dol_syslog(__METHOD__." Invoice ref $n->ref NAV invoice status: ".$statusXml->asXML(), LOG_INFO);
                 $n->error_code = $result->invoiceStatus;
-                $validationMessages = $result->businessValidationMessages;
+
+                /* Validation messages */
+				$validationMessages = $result->businessValidationMessages;
                 if (!empty($validationMessages)) {
                     $n->error_code = $validationMessages->validationErrorCode;
                     $n->message = $validationMessages->message;
-                } else if ($result->invoiceStatus == "DONE") {
+                }
+
+                /* Annulment data */
+				$annulmentVerificationStatus = "";
+				$annulmentData = $statusXml->processingResults->annulmentData;
+				if (!empty($annulmentData)) {
+					$annulmentVerificationStatus = $annulmentData->annulmentVerificationStatus;
+				}
+
+                /* Status update */
+                if ($result->invoiceStatus == "DONE" &&
+					($annulmentVerificationStatus == "VERIFICATION_DONE" || empty($validationMessages))) {
                     $n->result = NavResult::RESULT_SAVED;
                 }
                 if ($result->invoiceStatus == "ABORTED") {
@@ -122,7 +137,7 @@ class NavInvoiceSender {
 
         $this->db->commit();
     }
-    
+
     public function sendAnnulment($builder) {
         $ref = $builder->getRef();
         dol_syslog(__METHOD__." Sending invoice annulment ref $ref", LOG_INFO);
@@ -133,7 +148,7 @@ class NavInvoiceSender {
 
 			// 2. SEND
 
-            $transactionId = $this->reporter->manageAnnulment($this->invoiceXml);        
+            $transactionId = $this->reporter->manageAnnulment($this->invoiceXml);
 
             // 3. PERSIST
 
@@ -168,7 +183,7 @@ class NavInvoiceSender {
 		} else if ($id == 0) {
 			$needCreate = true;
         }
-        
+
         $needCreate = true;
 
 		$nav->tms = dol_now();
