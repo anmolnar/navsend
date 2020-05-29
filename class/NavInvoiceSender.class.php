@@ -1,6 +1,8 @@
 <?php
 /* Copyright (C) 2020 Andor Molnár <andor@apache.org> */
 
+require_once  __DIR__ . "/NavInvoiceXmlBuilder.class.php";
+require_once __DIR__ . "/NavAnnulmentXmlBuilder.class.php";
 require_once __DIR__ . "/../vendor/autoload.php";
 require_once __DIR__ . "/../class/navresult.class.php";
 
@@ -41,7 +43,7 @@ class NavInvoiceSender {
         $this->reporter = new NavOnlineInvoice\Reporter($config);
     }
 
-    public function send($builder) {
+    public function send(NavInvoiceXmlBuilder $builder) {
         $ref = $builder->getRef();
         $modusz = $builder->createOrModify();
         dol_syslog(__METHOD__." Sending invoice ref $ref modusz $modusz", LOG_INFO);
@@ -138,13 +140,13 @@ class NavInvoiceSender {
         $this->db->commit();
     }
 
-    public function sendAnnulment($builder) {
+    public function sendAnnulment(NavAnnulmentXmlBuilder $builder) {
         $ref = $builder->getRef();
         dol_syslog(__METHOD__." Sending invoice annulment ref $ref", LOG_INFO);
         try {
   			// 1. BUILD
 
-			$this->invoiceXml = $builder->buildAnnulment()->getXml();
+			$this->invoiceXml = $builder->build()->getXml();
 
 			// 2. SEND
 

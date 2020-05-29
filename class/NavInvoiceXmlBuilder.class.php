@@ -1,6 +1,7 @@
 <?php
 /* Copyright (C) 2020 Andor Molnár <andor@apache.org> */
 
+require_once __DIR__ . '/NavXmlBuilderBase.class.php';
 require_once __DIR__ . "/../../../core/class/ccountry.class.php";
 require_once __DIR__ . "/../../../compta/bank/class/account.class.php";
 require_once __DIR__ . "/../../../societe/class/societe.class.php";
@@ -14,8 +15,7 @@ class Vat {
 	public $vatRateGrossAmount = 0;
 	public $vatRateGrossAmountHUF = 0;
 
-	public function __construct($tx)
-	{
+	public function __construct($tx) {
 		$this->tx = $tx;
 	}
 
@@ -29,33 +29,16 @@ class Vat {
 	}
 }
 
-class NavInvoiceXmlBuilder
-{
+class NavInvoiceXmlBuilder extends NavXmlBuilderBase {
 	const DATE_FORMAT = "Y-m-d";
-    
+
     const xml_skeleton = <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
 <InvoiceData xmlns="http://schemas.nav.gov.hu/OSA/2.0/data" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.nav.gov.hu/OSA/2.0/data invoiceData.xsd">
 </InvoiceData>
 XML;
-    
-    const xml_annulment_skeleton = <<<ANNUL
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<InvoiceAnnulment xmlns="http://schemas.nav.gov.hu/OSA/2.0/annul">
-</InvoiceAnnulment>    
-ANNUL;
 
-	private $db;
-	private $root;
-	private $mysoc;
-	private $invoice; /** @var Facture $invoice */
 	private $vat = array();
-
-	public function __construct($db, $mysoc, $invoice) {
-		$this->db = $db;
-		$this->mysoc = $mysoc;
-		$this->invoice = $invoice;
-	}
 
 	public function build()	{
 		$this->root = new SimpleXMLElement(self::xml_skeleton);
@@ -85,42 +68,6 @@ ANNUL;
 		return $this;
     }
 
-    public function buildAnnulment() {
-		$this->root = new SimpleXMLElement(self::xml_annulment_skeleton);
-        $this->root->addChild("annulmentReference", $this->getRef());
-        $this->root->addChild("annulmentTimestamp", date('Y-m-d\TH:i:s\Z', dol_now()));
-        $this->root->addChild("annulmentCode", "ERRATIC_DATA");
-        $this->root->addChild("annulmentReason", "create szamla annul");        
-        return $this;
-    }
-
-    /**
-     * Returns the root simple xml element which is being built here.
-     *
-     * @return SimpleXMLElement XML root node
-     */
-    public function getXml() {
-        return $this->root;
-    }
-
-    /**
-     * Returns the original Facture (invoice) object which the builder is based on.
-     *
-     * @return Facture Invoice object
-     */
-    public function getInvoice() {
-        return $this->invoice;
-    }
-
-    /**
-     * Determine invoice number (ref): 'newref' if not empty, otherwise 'ref'
-     *
-     * @return string Invoice number
-     */
-    public function getRef() {
-		return empty($this->invoice->newref) ? $this->invoice->ref : $this->invoice->newref;
-    }
-
     /**
      * Does this invoice represent a Create (new invoice) or a Modify (alter existing invoice) operation?
      *
@@ -129,13 +76,6 @@ ANNUL;
     public function createOrModify() {
         return "CREATE";
     }
-
-	public function pprint() {
-		$dom = dom_import_simplexml($this->root)->ownerDocument;
-		$dom->formatOutput = true;
-		$dom->preserveWhiteSpace = false;
-		print($dom->saveXML());
-	}
 
 	private function addSupplierInfo($node) {
 		$this->explodeTaxNumber($node->addChild("supplierTaxNumber"), $this->mysoc->tva_intra);
