@@ -64,7 +64,8 @@ class NavUpdater extends NavBase {
         $annulmentVerificationStatus = "";
         $annulmentData = $statusXml->processingResults->annulmentData;
         if (!empty($annulmentData)) {
-                $annulmentVerificationStatus = $annulmentData->annulmentVerificationStatus;
+            $annulmentVerificationStatus = $annulmentData->annulmentVerificationStatus;
+            if (empty($n->error_code)) $n->error_code = $annulmentVerificationStatus;
         }
 
         /* Status update */
@@ -86,13 +87,17 @@ class NavUpdater extends NavBase {
         dol_syslog(__METHOD__." Resending invoice ref $n->ref", LOG_INFO);
         $r = $f->fetch(null, $n->ref);
 		if ($r < 0) {
-			dol_print_error($this->db, $this->navResult->error);
+			dol_print_error($this->db, $f->error);
 			throw new NavSendException("Unable to query db");
 		}
         NavInvoice::send($this->db, $this->user, $mysoc, $f, $n);
     }
 
-    public function report($ref, $xml) {        
+    public function report($ref, $xml) {
         // Not implemented
     }
+
+	public function getModusz()	{
+		// Not implemented
+	}
 }

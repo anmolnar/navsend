@@ -39,4 +39,6 @@ abstract class NavBase {
 
     public abstract function report(string $ref, SimpleXMLElement $xml);
 
+    public abstract function getModusz();
+
 }

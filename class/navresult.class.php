@@ -75,6 +75,7 @@ class NavResult extends CommonObject
 		'transaction_id' => array('type'=>'varchar(128)', 'label'=>'Transaction ID', 'enabled'=>1, 'position'=>150, 'notnull'=>0, 'visible'=>1,),
 		'xml' => array('type'=>'text', 'label'=>'Invoice XML', 'enabled'=>1, 'position'=>250, 'notnull'=>0, 'visible'=>1,),
 		'error_code' => array('type'=>'varchar(255)', 'label'=>'Error Code', 'enabled'=>1, 'position'=>200, 'notnull'=>0, 'visible'=>1,),
+		'modusz' => array('type'=>'varchar(50)', 'label'=>'Transaction', 'enabled'=>1, 'position'=>120, 'notnull'=>1, 'visible'=>1,),
 	);
 	public $rowid;
 	public $ref;
@@ -85,6 +86,7 @@ class NavResult extends CommonObject
 	public $transaction_id;
 	public $xml;
 	public $error_code;
+	public $modusz;
 	// END MODULEBUILDER PROPERTIES
 
 	const RESULT_SAVED = 0;
