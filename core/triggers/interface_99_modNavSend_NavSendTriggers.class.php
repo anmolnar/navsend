@@ -19,7 +19,8 @@
  */
 
 require_once DOL_DOCUMENT_ROOT.'/core/triggers/dolibarrtriggers.class.php';
-require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavInvoiceXmlBuilder.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavInvoice.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavAnnulment.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavInvoiceSender.class.php';
 
 /**
@@ -100,19 +101,15 @@ class InterfaceNavSendTriggers extends DolibarrTriggers
             case 'BILL_VALIDATE':
             	global $mysoc;
 				dol_syslog("BILL validated: id=" . $object->id . ", ref=" . $object->ref . ", newref=" . $object->newref . ", status = " . $object->statut);
-				$f = $object; /** @var Facture $f */
-				$builder = new NavInvoiceXmlBuilder($this->db, $mysoc, $f);
-				$sender = new NavInvoiceSender($this->db, $user);
-				$sender->send($builder);
+                $f = $object; /** @var Facture $f */
+                NavInvoice::send($this->db, $user, $mysoc, $f);
 				return 1;
 
 			case 'BILL_UNVALIDATE':
 				global $mysoc;
                 dol_syslog("BILL unvalidated: id=".$object->id . ", ref=" . $object->ref . ", newref=" . $object->newref . ", status = " . $object->statut);
                 $f = $object; /** @var Facture $f */
-                $builder = new NavAnnulmentXmlBuilder($this->db, $mysoc, $f);
-                $sender = new NavInvoiceSender($this->db, $user);
-                $sender->sendAnnulment($builder);
+                NavAnnulment::send($this->db, $user, $mysoc, $f);
 				return 1;
 
             //case 'BILL_SENTBYMAIL':

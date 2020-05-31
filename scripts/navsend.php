@@ -76,16 +76,19 @@ $db->begin();
 
 // Examples for manipulating class MyObject
 dol_include_once("/compta/facture/class/facture.class.php");
-dol_include_once("/custom/navsend/class/NavInvoiceXmlBuilder.class.php");
-dol_include_once("/custom/navsend/class/NavInvoiceSender.class.php");
+dol_include_once("/custom/navsend/class/NavUpdater.class.php");
 
 global $mysoc;
 $f = new Facture($db);
 $f->fetch(11);
 
 print '--- Sending invoice'."\n";
-$sender = new NavInvoiceSender($db, $user);
-$sender->queryNavStatus();
+$sender = new NavUpdater($db, $user);
+try {
+    $sender->queryNavStatus();
+} catch (Exception $ex) {
+    print $ex->getMessage()."\n";
+}
 
 // Example for inserting creating object in database
 /*
