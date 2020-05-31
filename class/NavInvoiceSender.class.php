@@ -10,28 +10,24 @@ class NavInvoiceSender {
     private $user;
     private $invoiceXml;
     private $navResult; /** @var NavResult @navResult */
-	private $builder;
 	private $model;
 
-    public function __construct($db, $user, NavXmlBuilderBase $builder, NavBase $model, $result) {
-        $this->db = $db;
-        $this->user = $user;
+    public function __construct(NavBase $model, $result) {
+        $this->db = $model->getDb();
+        $this->user = $model->getUser();
         $this->navResult = $result;
-        $this->builder = $builder;
         $this->model = $model;
     }
 
-    public function send() {
-    	$ref = $this->builder->getRef();
-
+    public function send(SimpleXMLElement $invoiceXml) {
         try {
 			// 1. BUILD
 
-			$this->invoiceXml = $this->builder->build()->getXml();
+			$this->invoiceXml = $invoiceXml;
 
             // 2. SEND
 
-            $transactionId = $this->model->report($ref, $this->invoiceXml);
+            $transactionId = $this->model->report($this->invoiceXml);
 
 			// 3. PERSIST
 
@@ -64,7 +60,7 @@ class NavInvoiceSender {
         }
 
 		$this->navResult->tms = dol_now();
-		$this->navResult->ref = $this->builder->getRef();
+		$this->navResult->ref = $this->model->getRef();
     	$this->navResult->result = $result;
     	$this->navResult->message = $msg;
     	$this->navResult->error_code = $errored;

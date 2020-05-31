@@ -27,18 +27,36 @@ abstract class NavBase {
 
     protected $db;
     protected $user;
+    protected $ref;
     protected $reporter; /** @var NavReporter $reporter */
 
-    public function __construct($db, $user) {
+	const MODUSZ_CREATE = "CREATE";
+	const MODUSZ_ANNULMENT = "ANNULMENT";
+	const MODUSZ_MODIFY = "MODIFY";
+	const MODUSZ_STORNO = "STORNO";
+
+	public function __construct($db, $user, $ref) {
         $this->db = $db;
         $this->user = $user;
+        $this->ref = $ref;
         $config = new NavOnlineInvoice\Config($this->apiUrl, $this->userData, $this->softwareData);
         $config->setCurlTimeout(70); // 70 másodperces cURL timeout (NAV szerver hívásnál), opcionális
         $this->reporter = new NavOnlineInvoice\Reporter($config);
     }
 
-    public abstract function report(string $ref, SimpleXMLElement $xml);
+    public abstract function report(SimpleXMLElement $xml);
 
     public abstract function getModusz();
 
+    public function getDb() {
+    	return $this->db;
+	}
+
+	public function getUser() {
+    	return $this->user;
+	}
+
+	public function getRef() {
+    	return $this->ref;
+	}
 }

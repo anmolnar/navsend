@@ -41,6 +41,7 @@ XML;
 	private $vat = array();
 
 	public function build()	{
+		dol_syslog(__METHOD__." Building create XML for invoice ref ".$this->getRef(), LOG_INFO);
 		$this->root = new SimpleXMLElement(self::xml_skeleton);
 		$this->vat = array();
 		$this->root->addChild("invoiceNumber", $this->getRef());

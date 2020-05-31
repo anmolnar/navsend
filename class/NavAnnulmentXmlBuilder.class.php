@@ -12,6 +12,7 @@ class NavAnnulmentXmlBuilder extends NavXmlBuilderBase {
 ANNUL;
 
 	function build() {
+		dol_syslog(__METHOD__." Building annulment XML for invoice ref ".$this->getRef(), LOG_INFO);
 		$this->root = new SimpleXMLElement(self::xml_annulment_skeleton);
 		$this->root->addChild("annulmentReference", $this->getRef());
 		$this->root->addChild("annulmentTimestamp", date('Y-m-d\TH:i:s\Z', dol_now()));

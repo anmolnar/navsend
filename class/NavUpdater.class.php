@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/NavBase.class.php';
+require_once __DIR__ . '/NavAnnulment.class.php';
 require_once __DIR__ . '/NavInvoice.class.php';
 require_once __DIR__ . '/exception/NavSendException.class.php';
 require_once __DIR__ . '/../../../compta/facture/class/facture.class.php';
@@ -10,25 +11,30 @@ class NavUpdater extends NavBase {
     public function updateAll() {
         $nav = new NavResult($this->db);
         $result = $nav->fetchAll('','', 100,0,
-            array("customsql" => "result IN (2, 4)"));
+            array("customsql" => "result IN (2, 3, 4, 5)"));
 
         if (!is_array($result)) {
             dol_print_error($this->db, $nav->error);
             throw new NavSendException("Unable to query db");
         }
 
-        dol_syslog(__METHOD__." Checking ".count($result)." row(s) in NAV result table", LOG_INFO);
+		if (count($result) <= 0) {
+			return;
+		}
 
-        if (count($result) <= 0) {
-            return;
-        }
+        dol_syslog(__METHOD__." Checking ".count($result)." row(s) in NAV result table", LOG_INFO);
 
         foreach ($result as $n) { /** @var NavResult $n */
             try {
                 switch ($n->result) {
                     case NavResult::RESULT_XSDERROR:
+					case NavResult::RESULT_ERROR:
                         $this->resend($n);
                         break;
+
+					case NavResult::RESULT_NETERROR:
+						$this->retransfer($n);
+						break;
 
                     case NavResult::RESULT_SENTOK:
                         $this->queryNavStatus($n);
@@ -90,10 +96,35 @@ class NavUpdater extends NavBase {
 			dol_print_error($this->db, $f->error);
 			throw new NavSendException("Unable to query db");
 		}
-        NavInvoice::send($this->db, $this->user, $mysoc, $f, $n);
+		switch ($n->modusz) {
+			case NavBase::MODUSZ_ANNULMENT:
+				NavAnnulment::send($this->db, $this->user, $mysoc, $f, $n);
+				break;
+			case NavBase::MODUSZ_CREATE:
+				NavInvoice::send($this->db, $this->user, $mysoc, $f, $n);
+				break;
+			default:
+				throw new NavSendException("Unsupported modusz: ".$n->modusz);
+		}
     }
 
-    public function report($ref, $xml) {
+    public function retransfer(NavResult $n) {
+		dol_syslog(__METHOD__." Retrying transmission of invoice ref $n->ref modusz $n->modusz", LOG_INFO);
+		switch ($n->modusz) {
+			case NavBase::MODUSZ_ANNULMENT:
+				$model = new NavAnnulment($this->db, $this->user, $n->ref);
+				break;
+			case NavBase::MODUSZ_CREATE:
+				$model = new NavInvoice($this->db, $this->user, $n->ref);
+				break;
+			default:
+				throw new NavSendException("Unsupported modusz: ".$n->modusz);
+		}
+		$sender = new NavInvoiceSender($model, $n);
+		$sender->send(new SimpleXMLElement($n->xml));
+	}
+
+    public function report($xml) {
         // Not implemented
     }
 
