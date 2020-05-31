@@ -13,9 +13,9 @@ class NavAnnulment extends NavBase {
         return $transactionId;
     }
 
-    public static function send($db, $user, $mysoc, $f) {
+    public static function send($db, $user, $mysoc, $f, $result = null) {
         $builder = new NavAnnulmentXmlBuilder($db, $mysoc, $f);
-        $sender = new NavInvoiceSender($db, $user);
+        $sender = new NavInvoiceSender($db, $user, $result);
         $sender->send($builder, new NavAnnulment($db, $user));
     }
 

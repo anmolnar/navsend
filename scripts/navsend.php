@@ -79,13 +79,12 @@ dol_include_once("/compta/facture/class/facture.class.php");
 dol_include_once("/custom/navsend/class/NavUpdater.class.php");
 
 global $mysoc;
-$f = new Facture($db);
-$f->fetch(11);
 
 print '--- Sending invoice'."\n";
 $sender = new NavUpdater($db, $user);
 try {
-    $sender->queryNavStatus();
+    //$sender->queryNavStatus();
+    $sender->updateAll();
 } catch (Exception $ex) {
     print $ex->getMessage()."\n";
 }

@@ -82,8 +82,10 @@ XML;
 		$node->addChild("supplierName", $this->mysoc->name);
 		$this->explodeAddress($node->addChild("supplierAddress"), $this->mysoc);
 		$bac = new Account($this->db);
-		$bac->fetch($this->invoice->fk_account);
-		$node->addChild("supplierBankAccountNumber", $bac->number);
+        $bac->fetch($this->invoice->fk_account);
+        if (!empty($bac->number)) {
+            $node->addChild("supplierBankAccountNumber", $bac->number);
+        }
 	}
 
 	private function addCustomerInfo($node) {

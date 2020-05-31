@@ -13,9 +13,9 @@ class NavInvoice extends NavBase {
         return $transactionId;
     }
 
-    public static function send($db, $user, $mysoc, $f) {
+    public static function send($db, $user, $mysoc, $f, $result = null) {
         $builder = new NavInvoiceXmlBuilder($db, $mysoc, $f);
-        $sender = new NavInvoiceSender($db, $user);
+        $sender = new NavInvoiceSender($db, $user, $result);
         $sender->send($builder, new NavInvoice($db, $user));
     }
 

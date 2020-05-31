@@ -2,16 +2,19 @@
 /* Copyright (C) 2020 Andor Molnár <andor@apache.org> */
 
 require_once __DIR__ . "/NavXmlBuilderBase.class.php";
+require_once __DIR__ . "/navresult.class.php";
 
 class NavInvoiceSender {
 
     private $db;
     private $user;
     private $invoiceXml;
+    private $navResult; /** @var NavResult @navResult */
 
-    public function __construct($db, $user) {
+    public function __construct($db, $user, $result) {
         $this->db = $db;
         $this->user = $user;
+        $this->navResult = $result;
     }
 
     public function send(NavXmlBuilderBase $builder, NavBase $model) {
@@ -49,33 +52,28 @@ class NavInvoiceSender {
     }
 
     private function resultCreateOrUpdate($ref, $result, $msg, $errored, $tid) {
-		$nav = new NavResult($this->db);
-		$needCreate = false;
-		$id = $nav->fetch(null, $ref);
-		if ($id < 0) {
-			dol_print_error($this->db, $nav->error);
-			throw new NavSendException("Unable to query db");
-		} else if ($id == 0) {
-			$needCreate = true;
+        $needCreate = false;
+
+        if (empty($this->navResult)) {
+            $this->navResult = new NavResult($this->db);
+            $needCreate = true;
         }
 
-        $needCreate = true;
-
-		$nav->tms = dol_now();
-		$nav->ref = $ref;
-    	$nav->result = $result;
-    	$nav->message = $msg;
-    	$nav->error_code = $errored;
-    	$nav->xml = $this->invoiceXml->asXML();
-    	$nav->transaction_id = $tid;
+		$this->navResult->tms = dol_now();
+		$this->navResult->ref = $ref;
+    	$this->navResult->result = $result;
+    	$this->navResult->message = $msg;
+    	$this->navResult->error_code = $errored;
+    	$this->navResult->xml = $this->invoiceXml->asXML();
+    	$this->navResult->transaction_id = $tid;
 
     	if ($needCreate) {
-    		$result = $nav->create($this->user);
+    		$r = $this->navResult->create($this->user);
 		} else {
-    		$result = $nav->update($this->user);
+    		$r = $this->navResult->update($this->user);
 		}
-		if ($result < 0) {
-			dol_print_error($this->db, $nav->error);
+		if ($r < 0) {
+			dol_print_error($this->db, $this->navResult->error);
 			throw new NavSendException("Unable to write db");
 		}
 	}
