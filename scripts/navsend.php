@@ -81,7 +81,7 @@ dol_include_once("/custom/navsend/class/NavUpdater.class.php");
 global $mysoc;
 
 print '--- Sending invoice'."\n";
-$sender = new NavUpdater($db, $user, "");
+$sender = new NavUpdater($db, $user);
 try {
     $sender->updateAll();
 } catch (Exception $ex) {

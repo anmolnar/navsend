@@ -10,7 +10,7 @@ class NavInvoiceSender {
     private $user;
     private $invoiceXml;
     private $navResult; /** @var NavResult @navResult */
-	private $model;
+    private $model; /** @var NavBase $model */    
 
     public function __construct(NavBase $model, $result) {
         $this->db = $model->getDb();
@@ -33,19 +33,22 @@ class NavInvoiceSender {
 
 			$this->resultCreateOrUpdate(NavResult::RESULT_SENTOK, "OK", "", $transactionId);
 
-			return true;
 		} catch (NavOnlineInvoice\XsdValidationError $ex) {
         	dol_syslog(__METHOD__." ".$ex->getMessage(), LOG_ERR);
-			$this->resultCreateOrUpdate(NavResult::RESULT_XSDERROR, $ex->getMessage(), "", "");
+            $this->resultCreateOrUpdate(NavResult::RESULT_XSDERROR, $ex->getMessage(), "", "");
+            throw $ex;
 		} catch (NavOnlineInvoice\CurlError | NavOnlineInvoice\HttpResponseError $ex) {
 			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_ERR);
-			$this->resultCreateOrUpdate(NavResult::RESULT_NETERROR, $ex->getMessage(), "", "");
+            $this->resultCreateOrUpdate(NavResult::RESULT_NETERROR, $ex->getMessage(), "", "");
+            throw $ex;
 		} catch (NavOnlineInvoice\GeneralErrorResponse | NavOnlineInvoice\GeneralExceptionResponse $ex) {
 			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_ERR);
-			$this->resultCreateOrUpdate(NavResult::RESULT_NAVERROR, $ex->getMessage(), $ex->getErrorCode(), "");
+            $this->resultCreateOrUpdate(NavResult::RESULT_NAVERROR, $ex->getMessage(), $ex->getErrorCode(), "");
+            throw $ex;
 		} catch (Exception $ex) {
 			dol_syslog(__METHOD__." ".$ex->getMessage(), LOG_ERR);
         	$this->resultCreateOrUpdate(NavResult::RESULT_ERROR, $ex->getMessage(), "", "");
+            throw $ex;
 		} finally {
         	$this->db->commit();
 		}

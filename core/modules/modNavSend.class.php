@@ -116,7 +116,22 @@ class modNavSend extends DolibarrModules
 		$this->boxes = array();
 		// Cronjobs (List of cron jobs entries to add when module is enabled)
 		// unit_frequency must be 60 for minute, 3600 for hour, 86400 for day, 604800 for week
-		$this->cronjobs = array();
+		$this->cronjobs = array(
+		    0=>array(
+		        'label'=>'UpdateNAV', 
+		        'jobtype'=>'method', 
+		        'class'=>'custom/navsend/class/NavUpdater.class.php', 
+		        'objectname'=>'NavUpdater', 
+		        'method'=>'updateAll', 
+		        'parameters'=>'', 
+		        'comment'=>'Update NAV result database', 
+		        'frequency'=>2, 
+		        'unitfrequency'=>60, 
+		        'priority'=>50, 
+		        'status'=>1, 
+		        'test'=>'$conf->navsend->enabled', 
+		        'datestart'=>$datestart),
+        );
 		// Permissions provided by this module
 		$this->rights = array();
 		// Main menu entries to add

@@ -102,14 +102,24 @@ class InterfaceNavSendTriggers extends DolibarrTriggers
             	global $mysoc;
 				dol_syslog("BILL validated: id=" . $object->id . ", ref=" . $object->ref . ", newref=" . $object->newref . ", status = " . $object->statut);
                 $f = $object; /** @var Facture $f */
-                NavInvoice::send($this->db, $user, $mysoc, $f);
-				return 1;
+                try {
+                    NavInvoice::send($this->db, $user, $mysoc, $f);
+                } catch (Exception $ex) {
+                    array_push($this->errors, "NAV ".$ex->getMessage());
+                    return -1;
+                }
+                return 1;
 
 			case 'BILL_UNVALIDATE':
 				global $mysoc;
                 dol_syslog("BILL unvalidated: id=".$object->id . ", ref=" . $object->ref . ", newref=" . $object->newref . ", status = " . $object->statut);
                 $f = $object; /** @var Facture $f */
-                NavAnnulment::send($this->db, $user, $mysoc, $f);
+                try {
+                    $err = NavAnnulment::send($this->db, $user, $mysoc, $f);
+                } catch (Exception $ex) {
+                    array_push($this->errors, "NAV ".$ex->getMessage());
+                    return -1;
+                }
 				return 1;
 
             //case 'BILL_SENTBYMAIL':
