@@ -17,4 +17,4 @@
 # Other
 *.back
 composer.phar
-
+/bin
