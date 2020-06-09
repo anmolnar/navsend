@@ -5,6 +5,7 @@ require_once __DIR__ . '/NavXmlBuilderBase.class.php';
 require_once __DIR__ . "/../../../core/class/ccountry.class.php";
 require_once __DIR__ . "/../../../compta/bank/class/account.class.php";
 require_once __DIR__ . "/../../../societe/class/societe.class.php";
+require_once __DIR__ . "/../../../product/class/product.class.php";
 
 class Vat {
 	public $tx;
@@ -109,11 +110,25 @@ XML;
 			$tva->update($ligne);
 
 			$line = $node->addChild("line");
-			$line->addChild("lineNumber", $i);
-			//$line->addChild("productCodes"); // TODO
+            $line->addChild("lineNumber", $i);
+            if (!empty($ligne->fk_product)) {
+                $p = new Product($this->db);
+                $p->fetch($ligne->fk_product);
+                $pcode = strtoupper(preg_replace("/[^A-Z0-9]+/i", "", $p->array_options["options_onewebcpacode"]));
+                if (!empty($pcode)) {
+                    $codes = $line->addChild("productCodes");
+                    $code = $codes->addChild("productCode");
+                    $code->addChild("productCodeCategory", "TESZOR");
+                    $code->addChild("productCodeValue", $pcode);
+                }
+            }
 			$line->addChild("lineExpressionIndicator", "true");
-			$line->addChild("lineNatureIndicator", $ligne->product_type == 0 ? "PRODUCT" : "SERVICE");
-			$line->addChild("lineDescription", $ligne->desc);
+			$line->addChild("lineNatureIndicator", $ligne->product_type == 0 ? "PRODUCT" : "SERVICE");		
+            if (!empty($ligne->fk_product)) {
+                $line->addChild("lineDescription", $ligne->product_ref." - ".$ligne->product_label);
+            } else {
+                $line->addChild("lineDescription", $ligne->desc);
+            }
 			$line->addChild("quantity", $ligne->qty);
 			$line->addChild("unitOfMeasure", "PIECE");
 			$line->addChild("unitPrice", $ligne->multicurrency_subprice);
