@@ -1,4 +1,5 @@
 <?php
+/* Copyright (C) 2020 Andor Molnár <andor@apache.org> */
 
 require_once __DIR__ . '/ReporterFactory.class.php';
 require_once __DIR__ . '/NavAnnulment.class.php';
@@ -30,9 +31,9 @@ class NavUpdater {
             array_push($this->errors, "DB error: ".$nav->error);
             return 1;
         }
-        
+
         dol_syslog(__METHOD__." Checking ".count($result)." row(s) in NAV result table", LOG_INFO);
-        
+
         if (count($result) <= 0) {
             $this->output =  "No row to update";
 			return 0;

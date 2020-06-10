@@ -123,12 +123,18 @@ XML;
                 }
             }
 			$line->addChild("lineExpressionIndicator", "true");
-			$line->addChild("lineNatureIndicator", $ligne->product_type == 0 ? "PRODUCT" : "SERVICE");		
+			$line->addChild("lineNatureIndicator", $ligne->product_type == 0 ? "PRODUCT" : "SERVICE");
             if (!empty($ligne->fk_product)) {
-                $line->addChild("lineDescription", $ligne->product_ref." - ".$ligne->product_label);
+				$ligneDesc = $ligne->product_ref." - ".$ligne->product_label;
             } else {
-                $line->addChild("lineDescription", $ligne->desc);
+				$ligneDesc = $ligne->desc;
             }
+            $ligneDesc = html_entity_decode($ligneDesc);                // 1. decode any encoded character 
+            $ligneDesc = strip_tags($ligneDesc);                        // 2. remove html tags
+            $ligneDesc = preg_replace("/[\r\n]/", " ", $ligneDesc);      // 3. remove newline characters
+            $ligneDesc = htmlspecialchars($ligneDesc);                  // 4. encode html special chars to be XML safe
+            $ligneDesc = substr($ligneDesc, 0, 512);                    // 5. Max length: 512
+			$line->addChild("lineDescription", $ligneDesc);
 			$line->addChild("quantity", $ligne->qty);
 			$line->addChild("unitOfMeasure", "PIECE");
 			$line->addChild("unitPrice", $ligne->multicurrency_subprice);

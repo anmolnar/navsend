@@ -1,7 +1,6 @@
 <?php
 /* Copyright (C) 2020 Andor Molnár <andor@apache.org> */
 
-
 abstract class NavXmlBuilderBase {
 
 	protected $db;

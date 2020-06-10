@@ -1,4 +1,5 @@
 <?php
+/* Copyright (C) 2020 Andor Molnár <andor@apache.org> */
 
 require_once __DIR__ . '/ReporterFactory.class.php';
 require_once __DIR__ . '/navresult.class.php';
