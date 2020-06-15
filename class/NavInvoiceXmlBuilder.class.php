@@ -39,18 +39,21 @@ class NavInvoiceXmlBuilder extends NavXmlBuilderBase {
 </InvoiceData>
 XML;
 
-	private $vat = array();
+    private $vat = array();
+    private $origInvoice;    /** @var Facture $origInvoice */
 
 	public function build()	{
-		dol_syslog(__METHOD__." Building create XML for invoice ref ".$this->getRef(), LOG_INFO);
+        dol_syslog(__METHOD__." Building create XML for invoice ref ".$this->getRef(), LOG_INFO);
+        $this->modusz = $this->calculateModusz();
 		$this->root = new SimpleXMLElement(self::xml_skeleton);
 		$this->vat = array();
 		$this->root->addChild("invoiceNumber", $this->getRef());
 		$this->root->addChild("invoiceIssueDate", $this->getFormattedDate($this->invoice->date_creation));
 		$invoiceNode = $this->root->addChild("invoiceMain")->addChild("invoice");
-		if ($this->createOrModify() == "MODIFY") {
+		if ($this->modusz == NavBase::MODUSZ_MODIFY || $this->modusz == NavBase::MODUSZ_STORNO) {
             $invoiceRef = $invoiceNode->addChild("invoiceReference");
-            $invoiceRef->addChild("originalInvoiceNumber", $this->getRef());
+            $invoiceRef->addChild("originalInvoiceNumber", $this->origInvoice->ref);
+            
             $invoiceRef->addChild("modifyWithoutMaster", "false");
             $invoiceRef->addChild("modificationIndex", 1);
 		}
@@ -58,7 +61,7 @@ XML;
 		$this->addSupplierInfo($invoiceHead->addChild("supplierInfo"));
 		$this->addCustomerInfo($invoiceHead->addChild("customerInfo"));
 		$detail = $invoiceHead->addChild("invoiceDetail");
-		$detail->addChild("invoiceCategory", $this->getInvoiceCategory($this->invoice->type));
+		$detail->addChild("invoiceCategory", "NORMAL");
 		$detail->addChild("invoiceDeliveryDate", $this->getFormattedDate($this->invoice->date_lim_reglement));
 		$detail->addChild("currencyCode", $this->invoice->multicurrency_code);
 		$detail->addChild("exchangeRate", $this->invoice->multicurrency_tx);
@@ -70,13 +73,27 @@ XML;
 		return $this;
     }
 
-    /**
-     * Does this invoice represent a Create (new invoice) or a Modify (alter existing invoice) operation?
-     *
-     * @return string CREATE or MODIFY
-     */
-    public function createOrModify() {
-        return "CREATE";
+    private function calculateModusz() {
+        switch ($this->invoice->type) {
+            case Facture::TYPE_STANDARD:
+                return NavBase::MODUSZ_CREATE;
+
+            case Facture::TYPE_CREDIT_NOTE:
+                $this->origInvoice = new Facture($this->db);
+                $res = $this->origInvoice->fetch($this->invoice->fk_facture_source);
+                if ($res < 0) {
+                    dol_print_error($this->db, $this->origInvoice->error);
+                    throw new NavSendException("Unable to fetch original invoice for CREDIT_NOTE " . $this->getRef());
+                }
+                if ($this->origInvoice->multicurrency_total_ttc + $this->invoice->multicurrency_total_ttc == 0) {
+                    return NavBase::MODUSZ_STORNO;
+                } else {
+                    return NavBase::MODUSZ_MODIFY;
+                }
+
+            default:
+                return NavBase::MODUSZ_UNKOWN;
+        }
     }
 
 	private function addSupplierInfo($node) {
@@ -111,6 +128,11 @@ XML;
 
 			$line = $node->addChild("line");
             $line->addChild("lineNumber", $i);
+            if ($this->modusz == NavBase::MODUSZ_MODIFY || $this->modusz == NavBase::MODUSZ_STORNO) {
+                $modificationRef = $line->addChild("lineModificationReference");
+                $modificationRef->addChild("lineNumberReference", $i);
+                $modificationRef->addChild("lineOperation", $i > count($this->origInvoice->lines) ? "CREATE" : "MODIFY");
+            }
             if (!empty($ligne->fk_product)) {
                 $p = new Product($this->db);
                 $p->fetch($ligne->fk_product);
@@ -129,7 +151,7 @@ XML;
             } else {
 				$ligneDesc = $ligne->desc;
             }
-            $ligneDesc = html_entity_decode($ligneDesc);                // 1. decode any encoded character 
+            $ligneDesc = html_entity_decode($ligneDesc);                // 1. decode any encoded character
             $ligneDesc = strip_tags($ligneDesc);                        // 2. remove html tags
             $ligneDesc = preg_replace("/[\r\n]/", " ", $ligneDesc);      // 3. remove newline characters
             $ligneDesc = htmlspecialchars($ligneDesc);                  // 4. encode html special chars to be XML safe
@@ -152,8 +174,8 @@ XML;
 
 			$gross = $amounts->addChild("lineGrossAmountData");
 			$gross->addChild("lineGrossAmountNormal", $ligne->multicurrency_total_ttc);
-			$gross->addChild("lineGrossAmountNormalHUF", $ligne->total_ttc);
-
+            $gross->addChild("lineGrossAmountNormalHUF", $ligne->total_ttc);
+            
 			$i++;
 		}
 	}
@@ -204,15 +226,6 @@ XML;
 		 * floor
 		 * door
 		*/
-	}
-
-	private function getInvoiceCategory($type) {
-		switch ($type) {
-			case 0:
-				return "NORMAL";
-			default:
-				return "UNKNOWN";
-		}
 	}
 
 	private function getFormattedDate($date) {

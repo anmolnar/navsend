@@ -91,6 +91,8 @@ class NavResult extends CommonObject
 
 	const RESULT_SAVED = 0;
 
+    const RESULT_UNSUPPORTED = 1;
+
     const RESULT_XSDERROR = 2;
 
     const RESULT_NETERROR = 3;

@@ -125,9 +125,17 @@ class NavUpdater {
 			case NavBase::MODUSZ_ANNULMENT:
 				NavAnnulment::send($this->db, $user, $mysoc, $f, $n);
 				break;
-			case NavBase::MODUSZ_CREATE:
+            case NavBase::MODUSZ_CREATE:
+            case NavBase::MODUSZ_MODIFY:
+            case NavBase::MODUSZ_STORNO:
 				NavInvoice::send($this->db, $user, $mysoc, $f, $n);
-				break;
+                break;
+            case NavBase::MODUSZ_UNKOWN:
+                dol_syslog(__METHOD__." Ignoring unsupported modusz UNKOWN for ref ".$n->ref, LOG_INFO);
+                $n->result = NavResult::RESULT_UNSUPPORTED;
+                $n->message = "Unsupported modusz UNKNOWN";
+                $n->update($user);
+                break;
 			default:
 				throw new NavSendException("Unsupported modusz: ".$n->modusz);
 		}
@@ -141,10 +149,18 @@ class NavUpdater {
 			case NavBase::MODUSZ_ANNULMENT:
 				$model = new NavAnnulment($this->db, $user, $n->ref);
 				break;
-			case NavBase::MODUSZ_CREATE:
-				$model = new NavInvoice($this->db, $user, $n->ref);
-				break;
-			default:
+            case NavBase::MODUSZ_CREATE:
+            case NavBase::MODUSZ_MODIFY:
+            case NavBase::MODUSZ_STORNO:
+				$model = new NavInvoice($this->db, $user, $n->ref, $n->modusz);
+                break;
+            case NavBase::MODUSZ_UNKOWN:
+                dol_syslog(__METHOD__." Ignoring unsupported modusz UNKOWN for ref ".$n->ref, LOG_INFO);
+                $n->result = NavResult::RESULT_UNSUPPORTED;
+                $n->message = "Unsupported modusz UNKNOWN";
+                $n->update($user);
+                break;
+            default:
 				throw new NavSendException("Unsupported modusz: ".$n->modusz);
 		}
 		$sender = new NavInvoiceSender($model, $n);

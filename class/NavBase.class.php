@@ -14,7 +14,8 @@ abstract class NavBase {
 	const MODUSZ_CREATE = "CREATE";
 	const MODUSZ_ANNULMENT = "ANNULMENT";
 	const MODUSZ_MODIFY = "MODIFY";
-	const MODUSZ_STORNO = "STORNO";
+    const MODUSZ_STORNO = "STORNO";
+    const MODUSZ_UNKOWN = "UNKNOWN";
 
 	public function __construct($db, $user, $ref = "") {
         $this->db = $db;
