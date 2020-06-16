@@ -18,6 +18,7 @@ class NavInvoice extends NavBase {
         dol_syslog(__METHOD__." Sending invoice ref ".$this->ref." modusz ".$this->modusz, LOG_INFO);
         $transactionId = $this->reporter->manageInvoice($xml, $this->modusz);
         dol_syslog(__METHOD__." Invoice ref ".$this->ref." has been successfully sent. Transaction ID = $transactionId", LOG_INFO);
+        $this->refCreateOrUpdate();
         return $transactionId;
     }
 
@@ -30,5 +31,5 @@ class NavInvoice extends NavBase {
 
 	public function getModusz()	{
 		return $this->modusz;
-	}
+    }
 }

@@ -31,7 +31,7 @@ class NavInvoiceSender {
 
 			// 3. PERSIST
 
-			$this->resultCreateOrUpdate(NavResult::RESULT_SENTOK, "OK", "", $transactionId);
+            $this->resultCreateOrUpdate(NavResult::RESULT_SENTOK, "OK", "", $transactionId);
 
 		} catch (NavOnlineInvoice\XsdValidationError $ex) {
         	dol_syslog(__METHOD__." ".$ex->getMessage(), LOG_ERR);

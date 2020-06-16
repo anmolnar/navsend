@@ -3,6 +3,7 @@
 
 require_once __DIR__ . '/ReporterFactory.class.php';
 require_once __DIR__ . '/navresult.class.php';
+require_once __DIR__ . "/navreference.class.php";
 
 abstract class NavBase {
 
@@ -38,5 +39,46 @@ abstract class NavBase {
 
 	public function getRef() {
     	return $this->ref;
-	}
+    }
+    
+    protected function refCreateOrUpdate() {
+        $needCreate = false;
+        $navRefDb = new NavReference($this->db);
+        $r = $navRefDb->fetch(null, $this->ref);
+		if ($r < 0) {
+			dol_print_error($this->db, $this->navRefDb->error);
+			throw new NavSendException("Unable to read db: ".$this->navRefDb->error);
+		}
+
+        if ($r == 0) {
+            $needCreate = true;
+            $navRefDb->ref = $this->ref;
+            $navRefDb->counter = 0;
+        }
+
+        switch ($this->getModusz()) {
+            case NavBase::MODUSZ_CREATE:
+                $navRefDb->counter = 0;
+                break;
+            case NavBase::MODUSZ_ANNULMENT:
+                if ($navRefDb->counter > 0) {
+                    $navRefDb->counter--;
+                }
+                break;
+            case NavBase::MODUSZ_MODIFY:
+            case NavBase::MODUSZ_STORNO:
+                $navRefDb->counter++;
+                break;
+        }
+
+        if ($needCreate) {
+    		$r = $this->navRefDb->create($this->user);
+		} else {
+    		$r = $this->navRefDb->update($this->user);
+		}
+		if ($r < 0) {
+			dol_print_error($this->db, $this->navRefDb->error);
+			throw new NavSendException("Unable to write db: ".$this->navRefDb->error);
+		}
+    }
 }

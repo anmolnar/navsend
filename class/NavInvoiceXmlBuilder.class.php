@@ -6,6 +6,7 @@ require_once __DIR__ . "/../../../core/class/ccountry.class.php";
 require_once __DIR__ . "/../../../compta/bank/class/account.class.php";
 require_once __DIR__ . "/../../../societe/class/societe.class.php";
 require_once __DIR__ . "/../../../product/class/product.class.php";
+require_once __DIR__ . "/navreference.class.php";
 
 class Vat {
 	public $tx;
@@ -53,9 +54,21 @@ XML;
 		if ($this->modusz == NavBase::MODUSZ_MODIFY || $this->modusz == NavBase::MODUSZ_STORNO) {
             $invoiceRef = $invoiceNode->addChild("invoiceReference");
             $invoiceRef->addChild("originalInvoiceNumber", $this->origInvoice->ref);
-            
-            $invoiceRef->addChild("modifyWithoutMaster", "false");
-            $invoiceRef->addChild("modificationIndex", 1);
+            $navRefDb = new NavReference($this->db);
+            $r = $navRefDb->fetch(null, $this->origInvoice->ref);
+            if ($r < 0) {
+                dol_print_error($this->db, $this->navRefDb->error);
+                throw new NavSendException("Unable to read db: ".$this->navRefDb->error);
+            }
+            if ($r == 0) {                
+                // Double-check with NAV
+                $isReported = $this->queryNavInvoice($this->origInvoice->ref);
+                $invoiceRef->addChild("modifyWithoutMaster", $isReported);
+                $invoiceRef->addChild("modificationIndex", 1);
+            } else {
+                $invoiceRef->addChild("modifyWithoutMaster", "false");
+                $invoiceRef->addChild("modificationIndex", $navRefDb->counter + 1);    
+            }           
 		}
 		$invoiceHead = $invoiceNode->addChild("invoiceHead");
 		$this->addSupplierInfo($invoiceHead->addChild("supplierInfo"));
@@ -247,5 +260,21 @@ XML;
             $j++;
         }
         return -1;
+    }
+
+    private function queryNavInvoice() {
+        try {
+            $invoiceNumberQuery = [
+                "invoiceNumber" => "T20190001",
+                "invoiceDirection" => "OUTBOUND",
+            ];
+            $invoiceDataResult = $reporter->queryInvoiceData($invoiceNumberQuery);
+        
+            print "Query results XML elem:\n";
+            var_dump($invoiceDataResult);
+        
+        } catch(Exception $ex) {
+            print get_class($ex) . ": " . $ex->getMessage();
+        }
     }
 }
