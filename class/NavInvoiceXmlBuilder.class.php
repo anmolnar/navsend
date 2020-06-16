@@ -130,8 +130,9 @@ XML;
             $line->addChild("lineNumber", $i);
             if ($this->modusz == NavBase::MODUSZ_MODIFY || $this->modusz == NavBase::MODUSZ_STORNO) {
                 $modificationRef = $line->addChild("lineModificationReference");
-                $modificationRef->addChild("lineNumberReference", $i);
-                $modificationRef->addChild("lineOperation", $i > count($this->origInvoice->lines) ? "CREATE" : "MODIFY");
+                $j = $this->findOrigInvoiceLigne($ligne);
+                $modificationRef->addChild("lineNumberReference", $j > 0 ? $j : $i);
+                $modificationRef->addChild("lineOperation", $j > 0 ? "MODIFY" : "CREATE");
             }
             if (!empty($ligne->fk_product)) {
                 $p = new Product($this->db);
@@ -153,7 +154,7 @@ XML;
             }
             $ligneDesc = html_entity_decode($ligneDesc);                // 1. decode any encoded character
             $ligneDesc = strip_tags($ligneDesc);                        // 2. remove html tags
-            $ligneDesc = preg_replace("/[\r\n]/", " ", $ligneDesc);      // 3. remove newline characters
+            $ligneDesc = preg_replace("/[\r\n]/", " ", $ligneDesc);     // 3. remove newline characters
             $ligneDesc = htmlspecialchars($ligneDesc);                  // 4. encode html special chars to be XML safe
             $ligneDesc = substr($ligneDesc, 0, 512);                    // 5. Max length: 512
 			$line->addChild("lineDescription", $ligneDesc);
@@ -232,5 +233,19 @@ XML;
 		$dt = new DateTime();
 		$dt->setTimestamp($date);
 		return $dt->format(self::DATE_FORMAT);
-	}
+    }
+    
+    private function findOrigInvoiceLigne(FactureLigne $ligne) {
+        $j = 1;
+        foreach ($this->origInvoice->lines as $origLigne) {
+            if (!empty($ligne->fk_product) && $ligne->fk_product == $origLigne->fk_product) {
+                return $j;
+            }
+            if (empty($ligne->fk_product) && $ligne->desc == $origLigne->desc) {
+                return $j;
+            }
+            $j++;
+        }
+        return -1;
+    }
 }
