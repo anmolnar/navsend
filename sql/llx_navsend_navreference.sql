@@ -18,6 +18,7 @@ CREATE TABLE llx_navsend_navreference(
 	-- BEGIN MODULEBUILDER FIELDS
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	ref varchar(128) NOT NULL, 
-	counter integer NOT NULL
+	counter integer NOT NULL, 
+	without_master boolean NOT NULL
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

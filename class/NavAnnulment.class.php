@@ -11,7 +11,6 @@ class NavAnnulment extends NavBase {
         dol_syslog(__METHOD__." Sending annulment ref ".$this->ref, LOG_INFO);
         $transactionId = $this->reporter->manageAnnulment($xml);
         dol_syslog(__METHOD__." Annulment ref ".$this->ref." has been successfully sent. Transaction ID = $transactionId", LOG_INFO);
-        $this->refCreateOrUpdate();
         return $transactionId;
     }
 

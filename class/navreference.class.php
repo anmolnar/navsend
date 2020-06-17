@@ -95,10 +95,12 @@ class NavReference extends CommonObject
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>1, 'position'=>1, 'notnull'=>1, 'visible'=>-1, 'noteditable'=>'1', 'index'=>1, 'comment'=>"Id"),
 		'ref' => array('type'=>'varchar(128)', 'label'=>'Ref', 'enabled'=>1, 'position'=>10, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'showoncombobox'=>'1', 'comment'=>"Reference of object"),
 		'counter' => array('type'=>'integer', 'label'=>'NAV Ref Counter', 'enabled'=>1, 'position'=>20, 'notnull'=>1, 'visible'=>1,),
+		'without_master' => array('type'=>'boolean', 'label'=>'Modify without master', 'enabled'=>1, 'position'=>30, 'notnull'=>1, 'visible'=>1,),
 	);
 	public $rowid;
 	public $ref;
 	public $counter;
+	public $without_master;
 	// END MODULEBUILDER PROPERTIES
 
 

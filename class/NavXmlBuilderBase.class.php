@@ -9,7 +9,7 @@ abstract class NavXmlBuilderBase {
     protected $invoice; /** @var Facture $invoice */
     protected $modusz;
 
-	public function __construct($db, $mysoc, $invoice) {
+	public function __construct($db, $mysoc, Facture $invoice) {
 		$this->db = $db;
 		$this->mysoc = $mysoc;
 		$this->invoice = $invoice;
@@ -43,7 +43,7 @@ abstract class NavXmlBuilderBase {
 	public function getRef() {
 		return empty($this->invoice->newref) ? $this->invoice->ref : $this->invoice->newref;
     }
-    
+
     /**
      * Returns the calculated invoice sending mode (create, modify, storno, annulment).
      * Only available if XML built.

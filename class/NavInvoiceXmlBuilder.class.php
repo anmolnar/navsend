@@ -7,6 +7,7 @@ require_once __DIR__ . "/../../../compta/bank/class/account.class.php";
 require_once __DIR__ . "/../../../societe/class/societe.class.php";
 require_once __DIR__ . "/../../../product/class/product.class.php";
 require_once __DIR__ . "/navreference.class.php";
+require_once __DIR__ . "/RefCounterProvider.class.php";
 
 class Vat {
 	public $tx;
@@ -42,6 +43,12 @@ XML;
 
     private $vat = array();
     private $origInvoice;    /** @var Facture $origInvoice */
+    private $reffer;
+
+    public function __construct($db, $user, Facture $f) {
+		parent::__construct($db, $user, $f);
+        $this->reffer = new RefCounterProvider($db);
+    }
 
 	public function build()	{
         dol_syslog(__METHOD__." Building create XML for invoice ref ".$this->getRef(), LOG_INFO);
@@ -53,23 +60,13 @@ XML;
 		$invoiceNode = $this->root->addChild("invoiceMain")->addChild("invoice");
 		if ($this->modusz == NavBase::MODUSZ_MODIFY || $this->modusz == NavBase::MODUSZ_STORNO) {
             $invoiceRef = $invoiceNode->addChild("invoiceReference");
-            $invoiceRef->addChild("originalInvoiceNumber", $this->origInvoice->ref);
-            $navRefDb = new NavReference($this->db);
-            $r = $navRefDb->fetch(null, $this->origInvoice->ref);
-            if ($r < 0) {
-                dol_print_error($this->db, $this->navRefDb->error);
-                throw new NavSendException("Unable to read db: ".$this->navRefDb->error);
-            }
-            if ($r == 0) {                
-                // Double-check with NAV
-                $isReported = $this->queryNavInvoice($this->origInvoice->ref);
-                $invoiceRef->addChild("modifyWithoutMaster", $isReported);
-                $invoiceRef->addChild("modificationIndex", 1);
-            } else {
-                $invoiceRef->addChild("modifyWithoutMaster", "false");
-                $invoiceRef->addChild("modificationIndex", $navRefDb->counter + 1);    
-            }           
-		}
+
+            $this->reffer->getReferenceCounter($this->origInvoice->ref);
+
+			$invoiceRef->addChild("originalInvoiceNumber", $this->origInvoice->ref);
+			$invoiceRef->addChild("modifyWithoutMaster", $this->reffer->getWithoutMaster());
+			$invoiceRef->addChild("modificationIndex", $this->reffer->getCounter());
+        }
 		$invoiceHead = $invoiceNode->addChild("invoiceHead");
 		$this->addSupplierInfo($invoiceHead->addChild("supplierInfo"));
 		$this->addCustomerInfo($invoiceHead->addChild("customerInfo"));
@@ -189,7 +186,7 @@ XML;
 			$gross = $amounts->addChild("lineGrossAmountData");
 			$gross->addChild("lineGrossAmountNormal", $ligne->multicurrency_total_ttc);
             $gross->addChild("lineGrossAmountNormalHUF", $ligne->total_ttc);
-            
+
 			$i++;
 		}
 	}
@@ -247,7 +244,7 @@ XML;
 		$dt->setTimestamp($date);
 		return $dt->format(self::DATE_FORMAT);
     }
-    
+
     private function findOrigInvoiceLigne(FactureLigne $ligne) {
         $j = 1;
         foreach ($this->origInvoice->lines as $origLigne) {
@@ -262,19 +259,4 @@ XML;
         return -1;
     }
 
-    private function queryNavInvoice() {
-        try {
-            $invoiceNumberQuery = [
-                "invoiceNumber" => "T20190001",
-                "invoiceDirection" => "OUTBOUND",
-            ];
-            $invoiceDataResult = $reporter->queryInvoiceData($invoiceNumberQuery);
-        
-            print "Query results XML elem:\n";
-            var_dump($invoiceDataResult);
-        
-        } catch(Exception $ex) {
-            print get_class($ex) . ": " . $ex->getMessage();
-        }
-    }
 }

@@ -78,6 +78,7 @@ $db->begin();
 dol_include_once("/compta/facture/class/facture.class.php");
 dol_include_once("/custom/navsend/class/NavUpdater.class.php");
 dol_include_once("/product/class/product.class.php");
+dol_include_once("/custom/navsend/class/RefCounterProvider.class.php");
 
 global $mysoc;
 
@@ -104,15 +105,12 @@ else print "Object created with id=".$id."\n";
 // Example for reading object from database
 
 dol_syslog($script_file." FETCH", LOG_DEBUG);
-$myobject = new Product($db);
-$id=7;
-$result=$myobject->fetch($id);
-if ($result < 0) { $error; dol_print_error($db,$myobject->error); }
-else print "Object with id=".$id." loaded\n";
 
-print var_dump($myobject->array_options);
+$reffer = new RefCounterProvider($db);
+$chain = $reffer->navInvoiceChainQuery("FA2006-0020");
 
-print preg_replace("/[^A-Z0-9]+/i", "", $myobject->array_options["options_onewebcpacode"]);
+print("Chain length = ".$chain."\n");
+
 
 
 // Example for updating object in database ($myobject must have been loaded by a fetch before)
