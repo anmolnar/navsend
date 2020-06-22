@@ -6,6 +6,7 @@ require_once __DIR__ . '/NavAnnulment.class.php';
 require_once __DIR__ . '/NavInvoice.class.php';
 require_once __DIR__ . '/exception/NavSendException.class.php';
 require_once __DIR__ . '/../../../compta/facture/class/facture.class.php';
+require_once DOL_DOCUMENT_ROOT.'/comm/action/class/actioncomm.class.php';
 
 class NavUpdater {
 
@@ -55,6 +56,9 @@ class NavUpdater {
 
                     case NavResult::RESULT_SENTOK:
                         $this->queryNavStatus($n);
+                        if ($n->result == NavResult::RESULT_SAVED) {
+                            $this->addAgenda($n);
+                        }
                         break;
                 }
                 $i++;
@@ -173,5 +177,26 @@ class NavUpdater {
 
 	public function getModusz()	{
 		// Not implemented
-	}
+    }
+    
+    private function addAgenda(NavResult $n) {
+        global $user;
+        $f = new Facture($this->db);
+        $f->fetch(null, $n->ref);
+        $now = dol_now();
+		$actioncomm = new ActionComm($this->db);
+		$actioncomm->type_code   = 'AC_OTH_AUTO';		// Type of event ('AC_OTH', 'AC_OTH_AUTO', 'AC_XXX'...)
+		$actioncomm->code        = 'AC_NAV_'.$n->modusz;
+		$actioncomm->label       = 'NAV action '.$n->modusz.' txn id '.$n->transaction_id;
+		$actioncomm->note_private= $n->message;
+		$actioncomm->fk_project  = 0;
+		$actioncomm->datep       = $now;
+		$actioncomm->datef       = $now;
+		$actioncomm->percentage  = -1;   // Not applicable
+		$actioncomm->authorid    = $user->id;   // User saving action
+        $actioncomm->userownerid = $user->id;	// Owner of action
+        $actioncomm->elementtype = 'invoice';
+        $actioncomm->fk_element  = $f->id;
+        $actioncomm->create($user);       // User creating action
+    }
 }
