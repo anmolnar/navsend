@@ -36,7 +36,7 @@ class ReporterFactory {
     public static function getReporter() {
         $rf = new ReporterFactory();
         if (empty($rf->apiUrl)) {
-            throw new NavSendException("NAV Sender hasn't been configured yet. Please configure navsend module first.");
+            throw new NavSendException("Reporter hasn't been configured yet. Please configure navsend module first.");
         }
         $config = new NavOnlineInvoice\Config($rf->apiUrl, $rf->userData, $rf->softwareData);
         $config->setCurlTimeout(70); // 70 másodperces cURL timeout (NAV szerver hívásnál), opcionális

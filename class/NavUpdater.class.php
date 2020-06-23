@@ -7,6 +7,7 @@ require_once __DIR__ . '/NavInvoice.class.php';
 require_once __DIR__ . '/exception/NavSendException.class.php';
 require_once __DIR__ . '/../../../compta/facture/class/facture.class.php';
 require_once DOL_DOCUMENT_ROOT.'/comm/action/class/actioncomm.class.php';
+require_once __DIR__ . '/exception/NavSendException.class.php';
 
 class NavUpdater {
 
@@ -18,10 +19,17 @@ class NavUpdater {
 
     public function __construct($db) {
         $this->db = $db;
-        $this->reporter = ReporterFactory::getReporter();
+        try {
+            $this->reporter = ReporterFactory::getReporter();
+        } catch (NavSendException $ex) {
+            dol_syslog(__METHOD__.' '.$ex->getMessage(), LOG_ERR);
+        }
     }
 
     public function updateAll() {
+        if (empty($this->reporter)) {
+            return;
+        }
         $this->output = "";
         $nav = new NavResult($this->db);
         $result = $nav->fetchAll('','', 100,0,

@@ -1,4 +1,5 @@
 <?php
 
-class NavSendException extends Exception {}
+class NavSendException extends Exception {
+}
 

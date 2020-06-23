@@ -105,6 +105,7 @@ class InterfaceNavSendTriggers extends DolibarrTriggers
                 try {
                     NavInvoice::send($this->db, $user, $mysoc, $f);
                 } catch (Exception $ex) {
+                    dol_syslog(__METHOD__.' '.$ex->getMessage(), LOG_ERR);
                     array_push($this->errors, "NAV ".$ex->getMessage());
                     return -1;
                 }
@@ -117,6 +118,7 @@ class InterfaceNavSendTriggers extends DolibarrTriggers
                 try {
                     $err = NavAnnulment::send($this->db, $user, $mysoc, $f);
                 } catch (Exception $ex) {
+                    dol_syslog(__METHOD__.' '.$ex->getMessage(), LOG_ERR);
                     array_push($this->errors, "NAV ".$ex->getMessage());
                     return -1;
                 }
