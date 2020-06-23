@@ -118,9 +118,11 @@ XML;
 	}
 
 	private function addCustomerInfo($node) {
-		$soc = new Societe($this->db);
-		$soc->fetch($this->invoice->socid);
-		$this->explodeTaxNumber($node->addChild("customerTaxNumber"), $soc->tva_intra);
+        $soc = new Societe($this->db);
+        $soc->fetch($this->invoice->socid);
+        if ($soc->typent_code != 'TE_PRIVATE') {
+            $this->explodeTaxNumber($node->addChild("customerTaxNumber"), $soc->tva_intra);
+        }
 		$node->addChild("customerName", $soc->name);
 		$this->explodeAddress($node->addChild("customerAddress"), $soc);
 	}
