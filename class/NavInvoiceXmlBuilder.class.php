@@ -72,7 +72,8 @@ XML;
 		$this->addCustomerInfo($invoiceHead->addChild("customerInfo"));
 		$detail = $invoiceHead->addChild("invoiceDetail");
 		$detail->addChild("invoiceCategory", "NORMAL");
-		$detail->addChild("invoiceDeliveryDate", $this->getFormattedDate($this->invoice->date_lim_reglement));
+        $detail->addChild("invoiceDeliveryDate", 
+            empty($this->invoice->date_pointoftax) ? $this->getFormattedDate($this->invoice->date) : $this->getFormattedDate($this->invoice->date_pointoftax));
 		$detail->addChild("currencyCode", $this->invoice->multicurrency_code);
 		$detail->addChild("exchangeRate", $this->invoice->multicurrency_tx);
 		$detail->addChild("paymentDate", $this->getFormattedDate($this->invoice->date_lim_reglement));

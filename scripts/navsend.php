@@ -106,7 +106,10 @@ else print "Object created with id=".$id."\n";
 
 dol_syslog($script_file." FETCH", LOG_DEBUG);
 
-print($conf->global->NAV_API_URL);
+$f = new Facture($db);
+$f->fetch(null, 'FA2006-0037');
+
+print_r($f->date_pointoftax);
 
 
 
