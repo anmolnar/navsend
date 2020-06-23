@@ -8,7 +8,7 @@ require_once __DIR__ . '/NavInvoiceSender.class.php';
 class NavAnnulment extends NavBase {
 
     public function report(SimpleXMLElement $xml) {
-        dol_syslog(__METHOD__." Sending annulment ref ".$this->ref, LOG_INFO);
+        dol_syslog(__METHOD__." Sending annulment ref ".$this->ref, LOG_DEBUG);
         $transactionId = $this->reporter->manageAnnulment($xml);
         dol_syslog(__METHOD__." Annulment ref ".$this->ref." has been successfully sent. Transaction ID = $transactionId", LOG_INFO);
         return $transactionId;

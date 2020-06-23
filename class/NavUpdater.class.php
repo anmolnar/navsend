@@ -41,7 +41,7 @@ class NavUpdater {
             return 1;
         }
 
-        dol_syslog(__METHOD__." Checking ".count($result)." row(s) in NAV result table", LOG_INFO);
+        dol_syslog(__METHOD__." Checking ".count($result)." row(s) in NAV result table", LOG_DEBUG);
 
         if (count($result) <= 0) {
             $this->output =  "No row to update";
@@ -86,14 +86,14 @@ class NavUpdater {
     public function queryNavStatus(NavResult $n) {
         global $user;
 
-        dol_syslog(__METHOD__." Query NAV for invoice ref $n->ref with transaction id $n->transaction_id", LOG_INFO);
+        dol_syslog(__METHOD__." Query NAV for invoice ref $n->ref with transaction id $n->transaction_id", LOG_DEBUG);
         $transactionId = $n->transaction_id;
         $statusXml = $this->reporter->queryTransactionStatus($transactionId); /** @var SimpleXMLElement $statusXml */
         $n->message = $statusXml->asXML();
 
         /* Invoice status */
         $result = $statusXml->processingResults->processingResult[0];
-        dol_syslog(__METHOD__." Invoice ref $n->ref NAV invoice status: ".$statusXml->asXML(), LOG_INFO);
+        dol_syslog(__METHOD__." Invoice ref $n->ref NAV invoice status: ".$statusXml->asXML(), LOG_DEBUG);
         $n->error_code = $result->invoiceStatus;
 
         /* Validation messages */
@@ -120,7 +120,7 @@ class NavUpdater {
         }
         $n->tms = dol_now();
         $n->update($user);
-        dol_syslog(__METHOD__." Invoice ref $n->ref updated result to ".NavResult::resultToString($n->result), LOG_INFO);
+        dol_syslog(__METHOD__." Invoice ref $n->ref updated result to ".NavResult::resultToString($n->result).' error code '.$n->error_code, LOG_INFO);
     }
 
     public function resend(NavResult $n) {

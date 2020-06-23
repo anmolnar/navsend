@@ -15,9 +15,9 @@ class NavInvoice extends NavBase {
     }
 
     public function report(SimpleXMLElement $xml) {
-        dol_syslog(__METHOD__." Sending invoice ref ".$this->ref." modusz ".$this->modusz, LOG_INFO);
+        dol_syslog(__METHOD__." Sending invoice ref ".$this->ref." modusz ".$this->modusz, LOG_DEBUG);
         $transactionId = $this->reporter->manageInvoice($xml, $this->modusz);
-        dol_syslog(__METHOD__." Invoice ref ".$this->ref." has been successfully sent. Transaction ID = $transactionId", LOG_INFO);
+        dol_syslog(__METHOD__." Invoice ref ".$this->ref." modusz $this->modusz has been successfully sent.  Transaction ID = $transactionId", LOG_INFO);
         if ($this->modusz == NavBase::MODUSZ_CREATE) {
         	$this->reffer->resetCounter($this->ref);
 		}
