@@ -81,6 +81,7 @@ class NavUpdater {
         dol_syslog(__METHOD__." Query NAV for invoice ref $n->ref with transaction id $n->transaction_id", LOG_INFO);
         $transactionId = $n->transaction_id;
         $statusXml = $this->reporter->queryTransactionStatus($transactionId); /** @var SimpleXMLElement $statusXml */
+        $n->message = $statusXml->asXML();
 
         /* Invoice status */
         $result = $statusXml->processingResults->processingResult[0];
@@ -91,7 +92,6 @@ class NavUpdater {
         $validationMessages = $result->businessValidationMessages;
         if (!empty($validationMessages)) {
             $n->error_code = $validationMessages->validationErrorCode;
-            $n->message = $validationMessages->message;
         }
 
         /* Annulment data */

@@ -56,7 +56,7 @@ XML;
 		$this->root = new SimpleXMLElement(self::xml_skeleton);
 		$this->vat = array();
 		$this->root->addChild("invoiceNumber", $this->getRef());
-		$this->root->addChild("invoiceIssueDate", $this->getFormattedDate($this->invoice->date_creation));
+		$this->root->addChild("invoiceIssueDate", $this->getFormattedDate($this->invoice->date));
 		$invoiceNode = $this->root->addChild("invoiceMain")->addChild("invoice");
 		if ($this->modusz == NavBase::MODUSZ_MODIFY || $this->modusz == NavBase::MODUSZ_STORNO) {
             $invoiceRef = $invoiceNode->addChild("invoiceReference");

@@ -106,10 +106,7 @@ else print "Object created with id=".$id."\n";
 
 dol_syslog($script_file." FETCH", LOG_DEBUG);
 
-$reffer = new RefCounterProvider($db);
-$chain = $reffer->navInvoiceChainQuery("FA2006-0020");
-
-print("Chain length = ".$chain."\n");
+print($conf->global->NAV_API_URL);
 
 
 

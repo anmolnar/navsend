@@ -33,11 +33,13 @@ $action = GETPOST('action', 'alpha');
 $backtopage = GETPOST('backtopage', 'alpha');
 
 $arrayofparameters = array(
-	'ACCESS_TOKEN'=>array('css'=>'minwidth200', 'enabled'=>1),
-	'SECRET_TOKEN'=>array('css'=>'minwidth500', 'enabled'=>1)
+    'NAV_API_URL' => array('css'=>'minwidth200', 'enabled'=>1),
+    'NAV_LOGIN' => array('css'=>'minwidth200', 'enabled'=>1),
+    'NAV_PASSWORD' => array('css'=>'minwidth200', 'enabled'=>1),
+    'NAV_TAXNUMBER' => array('css'=>'minwidth200', 'enabled'=>1),
+    'NAV_SIGNKEY' => array('css'=>'minwidth200', 'enabled'=>1),
+    'NAV_EXCHANGEKEY' => array('css'=>'minwidth200', 'enabled'=>1)
 );
-
-
 
 /*
  * Actions
