@@ -72,7 +72,7 @@ XML;
 		$this->addCustomerInfo($invoiceHead->addChild("customerInfo"));
 		$detail = $invoiceHead->addChild("invoiceDetail");
 		$detail->addChild("invoiceCategory", "NORMAL");
-        $detail->addChild("invoiceDeliveryDate", 
+        $detail->addChild("invoiceDeliveryDate",
             empty($this->invoice->date_pointoftax) ? $this->getFormattedDate($this->invoice->date) : $this->getFormattedDate($this->invoice->date_pointoftax));
 		$detail->addChild("currencyCode", $this->invoice->multicurrency_code);
 		$detail->addChild("exchangeRate", $this->invoice->multicurrency_tx);
@@ -109,7 +109,7 @@ XML;
 
 	private function addSupplierInfo($node) {
 		$this->explodeTaxNumber($node->addChild("supplierTaxNumber"), $this->mysoc->tva_intra);
-		$node->addChild("supplierName", $this->mysoc->name);
+		$node->supplierName[] = $this->mysoc->name;
 		$this->explodeAddress($node->addChild("supplierAddress"), $this->mysoc);
 		$bac = new Account($this->db);
         $bac->fetch($this->invoice->fk_account);
@@ -124,7 +124,7 @@ XML;
         if ($soc->typent_code != 'TE_PRIVATE') {
             $this->explodeTaxNumber($node->addChild("customerTaxNumber"), $soc->tva_intra);
         }
-		$node->addChild("customerName", $soc->name);
+        $node->customerName[] = $soc->name;
 		$this->explodeAddress($node->addChild("customerAddress"), $soc);
 	}
 
@@ -232,7 +232,7 @@ XML;
 		$address->addChild("countryCode", $country->code);
 		$address->addChild("postalCode", $soc->zip);
 		$address->addChild("city", $soc->town);
-        $address->addChild("streetName", $soc->address);
+        $address->streetName[] = $soc->address;
         $address->addChild("publicPlaceCategory", "STREET");
 		/* TODO
 		 * publicPlaceCategory
@@ -261,5 +261,4 @@ XML;
         }
         return -1;
     }
-
 }
