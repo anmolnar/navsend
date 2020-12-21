@@ -7,7 +7,7 @@ class NavAnnulmentXmlBuilder extends NavXmlBuilderBase {
 
 	const xml_annulment_skeleton = <<<ANNUL
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<InvoiceAnnulment xmlns="http://schemas.nav.gov.hu/OSA/2.0/annul">
+<InvoiceAnnulment xmlns="http://schemas.nav.gov.hu/OSA/3.0/annul">
 </InvoiceAnnulment>
 ANNUL;
 

@@ -37,7 +37,7 @@ class NavInvoiceXmlBuilder extends NavXmlBuilderBase {
 
     const xml_skeleton = <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
-<InvoiceData xmlns="http://schemas.nav.gov.hu/OSA/2.0/data" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.nav.gov.hu/OSA/2.0/data invoiceData.xsd">
+<InvoiceData xmlns="http://schemas.nav.gov.hu/OSA/3.0/data" xmlns:base="http://schemas.nav.gov.hu/OSA/3.0/base" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.nav.gov.hu/OSA/3.0/data invoiceData.xsd">
 </InvoiceData>
 XML;
 
@@ -57,6 +57,7 @@ XML;
 		$this->vat = array();
 		$this->root->addChild("invoiceNumber", $this->getRef());
 		$this->root->addChild("invoiceIssueDate", $this->getFormattedDate($this->invoice->date));
+		$this->root->addChild("completenessIndicator", "false");
 		$invoiceNode = $this->root->addChild("invoiceMain")->addChild("invoice");
 		if ($this->modusz == NavBase::MODUSZ_MODIFY || $this->modusz == NavBase::MODUSZ_STORNO) {
             $invoiceRef = $invoiceNode->addChild("invoiceReference");
@@ -121,14 +122,23 @@ XML;
 	private function addCustomerInfo($node) {
         $soc = new Societe($this->db);
         $soc->fetch($this->invoice->socid);
-        if ($soc->typent_code != 'TE_PRIVATE') {
-            $this->explodeTaxNumber($node->addChild("customerTaxNumber"), $soc->tva_intra);
-        }
-        $node->customerName[] = $soc->name;
+        if ($soc->typent_code == 'TE_PRIVATE') {
+			$node->addChild("customerVatStatus", "PRIVATE_PERSON");
+			return;
+		}
+        if ($soc->country_code == 'HU') {
+			$node->addChild("customerVatStatus", "DOMESTIC");
+			$this->explodeTaxNumber($node->addChild("customerVatData")->addChild("customerTaxNumber"), $soc->tva_intra);
+		} else {
+			$node->addChild("customerVatStatus", "OTHER");
+			$node->addChild("customerVatData")->addChild("communityVatNumber", $soc->tva_intra);
+		}
+		$node->customerName[] = $soc->name;
 		$this->explodeAddress($node->addChild("customerAddress"), $soc);
 	}
 
 	private function addInvoiceLines($node) {
+    	$node->addChild("mergedItemIndicator", "false");
 		$i = 1;
 		foreach ($this->invoice->lines as $ligne) { /** @var FactureLigne $ligne */
 			if (array_key_exists($ligne->tva_tx, $this->vat)) {
@@ -220,13 +230,13 @@ XML;
 
 	private function explodeTaxNumber($node, $tva_intra) {
 		$tva = explode("-", $tva_intra);
-		$node->addChild("taxpayerId", $tva[0]);
-		$node->addChild("vatCode", $tva[1]);
-		$node->addChild("countyCode", $tva[2]);
+		$node->addChild("taxpayerId", $tva[0], "http://schemas.nav.gov.hu/OSA/3.0/base");
+		$node->addChild("vatCode", $tva[1], "http://schemas.nav.gov.hu/OSA/3.0/base");
+		$node->addChild("countyCode", $tva[2], "http://schemas.nav.gov.hu/OSA/3.0/base");
 	}
 
 	private function explodeAddress($node, $soc) {
-		$address = $node->addChild("detailedAddress");
+		$address = $node->addChild("detailedAddress", null, "http://schemas.nav.gov.hu/OSA/3.0/base");
 		$country = new Ccountry($this->db);
 		$country->fetch($soc->country_id);
 		$address->addChild("countryCode", $country->code);

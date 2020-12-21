@@ -3,7 +3,7 @@
     "description": "NAV",
     "type": "project",
     "require": {
-        "pzs/nav-online-invoice": "^2.0",
+        "pzs/nav-online-invoice": "^3.0",
         "ext-SimpleXML": "^7.2"
     },
     "authors": [
@@ -11,5 +11,6 @@
             "name": "Andor Molnár",
             "email": "andor@apache.org"
         }
-    ]
+    ],
+    "minimum-stability": "RC"
 }
