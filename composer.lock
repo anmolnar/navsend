@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "adfaccbeeb1fd8488a773c98f32a8197",
+    "content-hash": "3c25bdc746bf0c00e1452774637b0b2b",
     "packages": [
         {
             "name": "pzs/nav-online-invoice",
-            "version": "v3.0.0-RC2",
+            "version": "v3.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pzs/nav-online-invoice.git",
-                "reference": "6df5b126bc3ac1caec4b70fd809f67b8e7c183a8"
+                "reference": "b74a73b38075c740aefbb66ed70b8b25160c6db7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pzs/nav-online-invoice/zipball/6df5b126bc3ac1caec4b70fd809f67b8e7c183a8",
-                "reference": "6df5b126bc3ac1caec4b70fd809f67b8e7c183a8",
+                "url": "https://api.github.com/repos/pzs/nav-online-invoice/zipball/b74a73b38075c740aefbb66ed70b8b25160c6db7",
+                "reference": "b74a73b38075c740aefbb66ed70b8b25160c6db7",
                 "shasum": ""
             },
             "require": {
@@ -41,12 +41,12 @@
                 "MIT"
             ],
             "description": "A PHP interface for Online Invoice Data Reporting of Hungarian Tax Office (NAV)",
-            "time": "2020-12-12T12:21:43+00:00"
+            "time": "2020-12-18T11:03:31+00:00"
         }
     ],
     "packages-dev": [],
     "aliases": [],
-    "minimum-stability": "RC",
+    "minimum-stability": "stable",
     "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,

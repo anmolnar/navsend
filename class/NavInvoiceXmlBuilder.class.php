@@ -44,6 +44,7 @@ XML;
     private $vat = array();
     private $origInvoice;    /** @var Facture $origInvoice */
     private $reffer;
+    private $customer_vat_status;	/* PRIVATE_PERSON, DOMESTIC, OTHER */
 
     public function __construct($db, $user, Facture $f) {
 		parent::__construct($db, $user, $f);
@@ -124,13 +125,16 @@ XML;
         $soc->fetch($this->invoice->socid);
         if ($soc->typent_code == 'TE_PRIVATE') {
 			$node->addChild("customerVatStatus", "PRIVATE_PERSON");
+			$this->customer_vat_status = "PRIVATE_PERSON";
 			return;
 		}
         if ($soc->country_code == 'HU') {
 			$node->addChild("customerVatStatus", "DOMESTIC");
+			$this->customer_vat_status = "DOMESTIC";
 			$this->explodeTaxNumber($node->addChild("customerVatData")->addChild("customerTaxNumber"), $soc->tva_intra);
 		} else {
 			$node->addChild("customerVatStatus", "OTHER");
+			$this->customer_vat_status = "OTHER";
 			$node->addChild("customerVatData")->addChild("communityVatNumber", $soc->tva_intra);
 		}
 		$node->customerName[] = $soc->name;
@@ -184,21 +188,23 @@ XML;
 			$line->addChild("quantity", $ligne->qty);
 			$line->addChild("unitOfMeasure", "PIECE");
 			$line->addChild("unitPrice", $ligne->multicurrency_subprice);
+			$line->addChild("unitPriceHUF", round($ligne->subprice));
 
 			$amounts = $line->addChild("lineAmountsNormal");
 
 			$net_amount = $amounts->addChild("lineNetAmountData");
 			$net_amount->addChild("lineNetAmount", $ligne->multicurrency_total_ht);
-			$net_amount->addChild("lineNetAmountHUF", $ligne->total_ht);
+			$net_amount->addChild("lineNetAmountHUF", round($ligne->total_ht));
 
-			$amounts->addChild("lineVatRate")->addChild("vatPercentage", $ligne->tva_tx / 100);
+			$this->addVatScope($amounts->addChild("lineVatRate"), $ligne->tva_tx);
+
 			$vatdata = $amounts->addChild("lineVatData");
 			$vatdata->addChild("lineVatAmount", $ligne->multicurrency_total_tva);
-			$vatdata->addChild("lineVatAmountHUF", $ligne->total_tva);
+			$vatdata->addChild("lineVatAmountHUF", round($ligne->total_tva));
 
 			$gross = $amounts->addChild("lineGrossAmountData");
 			$gross->addChild("lineGrossAmountNormal", $ligne->multicurrency_total_ttc);
-            $gross->addChild("lineGrossAmountNormalHUF", $ligne->total_ttc);
+            $gross->addChild("lineGrossAmountNormalHUF", round($ligne->total_ttc));
 
 			$i++;
 		}
@@ -208,24 +214,24 @@ XML;
 		$normal = $node->addChild("summaryNormal");
 		foreach($this->vat as $tx => $tva) { /** @var Vat $tva */
 			$summary = $normal->addChild("summaryByVatRate");
-			$summary->addChild("vatRate")->addChild("vatPercentage", $tx / 100);
+			$this->addVatScope($summary->addChild("vatRate"), $tx);
 			$net = $summary->addChild("vatRateNetData");
 			$net->addChild("vatRateNetAmount", $tva->vatRateNetAmount);
-			$net->addChild("vatRateNetAmountHUF", $tva->vatRateNetAmountHUF);
+			$net->addChild("vatRateNetAmountHUF", round($tva->vatRateNetAmountHUF));
 			$vat = $summary->addChild("vatRateVatData");
 			$vat->addChild("vatRateVatAmount", $tva->vatRateVatAmount);
-			$vat->addChild("vatRateVatAmountHUF", $tva->vatRateVatAmountHUF);
+			$vat->addChild("vatRateVatAmountHUF", round($tva->vatRateVatAmountHUF));
 			$gross = $summary->addChild("vatRateGrossData");
 			$gross->addChild("vatRateGrossAmount", $tva->vatRateGrossAmount);
-			$gross->addChild("vatRateGrossAmountHUF", $tva->vatRateGrossAmountHUF);
+			$gross->addChild("vatRateGrossAmountHUF", round($tva->vatRateGrossAmountHUF));
 		}
 		$normal->addChild("invoiceNetAmount", $this->invoice->multicurrency_total_ht);
-		$normal->addChild("invoiceNetAmountHUF", $this->invoice->total_ht);
+		$normal->addChild("invoiceNetAmountHUF", round($this->invoice->total_ht));
 		$normal->addChild("invoiceVatAmount", $this->invoice->multicurrency_total_tva);
-		$normal->addChild("invoiceVatAmountHUF", $this->invoice->total_tva);
+		$normal->addChild("invoiceVatAmountHUF", round($this->invoice->total_tva));
 		$grossData = $node->addChild("summaryGrossData");
 		$grossData->addChild("invoiceGrossAmount", $this->invoice->multicurrency_total_ttc);
-		$grossData->addChild("invoiceGrossAmountHUF", $this->invoice->total_ttc);
+		$grossData->addChild("invoiceGrossAmountHUF", round($this->invoice->total_ttc));
 	}
 
 	private function explodeTaxNumber($node, $tva_intra) {
@@ -271,4 +277,14 @@ XML;
         }
         return -1;
     }
+
+	private function addVatScope($node, $vat) {
+		if ($vat == 0 && $this->customer_vat_status == "OTHER") {
+			$vatScope = $node->addChild("vatOutOfScope");
+			$vatScope->addChild("case", "EUE");
+			$vatScope->addChild("reason", "Áfa Tv. területi hatályon kivüli");
+		} else {
+			$node->addChild("vatPercentage", $vat / 100);
+		}
+	}
 }

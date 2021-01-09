@@ -12,5 +12,5 @@
             "email": "andor@apache.org"
         }
     ],
-    "minimum-stability": "RC"
+    "minimum-stability": "stable"
 }

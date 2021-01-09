@@ -120,7 +120,7 @@ class NavUpdater {
         }
         $n->tms = dol_now();
         $n->update($user);
-        dol_syslog(__METHOD__." Invoice ref $n->ref updated result to ".NavResult::resultToString($n->result).' error code '.$n->error_code, LOG_INFO);
+        dol_syslog(__METHOD__." Invoice ref $n->ref updated result to ".NavResult::resultToString($n->result).' error code '.$n->error_code." txn id ".$n->transaction_id, LOG_INFO);
     }
 
     public function resend(NavResult $n) {
@@ -186,7 +186,7 @@ class NavUpdater {
 	public function getModusz()	{
 		// Not implemented
     }
-    
+
     private function addAgenda(NavResult $n) {
         global $user;
         $f = new Facture($this->db);
