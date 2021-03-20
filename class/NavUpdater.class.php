@@ -73,8 +73,6 @@ class NavUpdater {
             } catch (Exception $ex) {
                 dol_syslog(__METHOD__." Error checking invoice ref $n->ref: ".$ex->getMessage(), LOG_ERR);
                 array_push($this->errors, $n->ref.": ".$ex->getMessage());
-            } finally {
-                $this->db->commit();
             }
         }
 

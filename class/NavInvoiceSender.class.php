@@ -10,7 +10,7 @@ class NavInvoiceSender {
     private $user;
     private $invoiceXml;
     private $navResult; /** @var NavResult @navResult */
-    private $model; /** @var NavBase $model */    
+    private $model; /** @var NavBase $model */
 
     public function __construct(NavBase $model, $result) {
         $this->db = $model->getDb();
@@ -49,8 +49,6 @@ class NavInvoiceSender {
 			dol_syslog(__METHOD__." ".$ex->getMessage(), LOG_ERR);
         	$this->resultCreateOrUpdate(NavResult::RESULT_ERROR, $ex->getMessage(), "", "");
             throw $ex;
-		} finally {
-        	$this->db->commit();
 		}
     }
 
