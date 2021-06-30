@@ -110,13 +110,17 @@ XML;
     }
 
 	private function addSupplierInfo($node) {
-		$this->explodeTaxNumber($node->addChild("supplierTaxNumber"), $this->mysoc->tva_intra);
-		$node->supplierName[] = $this->mysoc->name;
-		$this->explodeAddress($node->addChild("supplierAddress"), $this->mysoc);
 		$bac = new Account($this->db);
-        $bac->fetch($this->invoice->fk_account);
-        if (!empty($bac->number)) {
-            $node->addChild("supplierBankAccountNumber", $bac->number);
+		$bac->fetch($this->invoice->fk_account);
+		$this->explodeTaxNumber($node->addChild("supplierTaxNumber"), $this->mysoc->tva_intra);
+		if (!empty($bac->number) && filter_var($bac->number, FILTER_VALIDATE_EMAIL)) {
+			$node->supplierName[] = $this->mysoc->name . " - " . $bac->number;
+		} else {
+			$node->supplierName[] = $this->mysoc->name;
+		}
+		$this->explodeAddress($node->addChild("supplierAddress"), $this->mysoc);
+        if (!empty($bac->number) && !filter_var($bac->number, FILTER_VALIDATE_EMAIL)) {
+			$node->addChild("supplierBankAccountNumber", $bac->number);
         }
 	}
 
