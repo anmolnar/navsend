@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3c25bdc746bf0c00e1452774637b0b2b",
+    "content-hash": "90b92f287e25b076ab3fe4cf5a26e157",
     "packages": [
         {
             "name": "pzs/nav-online-invoice",
-            "version": "v3.0.0",
+            "version": "v3.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pzs/nav-online-invoice.git",
-                "reference": "b74a73b38075c740aefbb66ed70b8b25160c6db7"
+                "reference": "97c882d61a8ea090fe73ab203194347237c8e22e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pzs/nav-online-invoice/zipball/b74a73b38075c740aefbb66ed70b8b25160c6db7",
-                "reference": "b74a73b38075c740aefbb66ed70b8b25160c6db7",
+                "url": "https://api.github.com/repos/pzs/nav-online-invoice/zipball/97c882d61a8ea090fe73ab203194347237c8e22e",
+                "reference": "97c882d61a8ea090fe73ab203194347237c8e22e",
                 "shasum": ""
             },
             "require": {
@@ -41,7 +41,11 @@
                 "MIT"
             ],
             "description": "A PHP interface for Online Invoice Data Reporting of Hungarian Tax Office (NAV)",
-            "time": "2020-12-18T11:03:31+00:00"
+            "support": {
+                "issues": "https://github.com/pzs/nav-online-invoice/issues",
+                "source": "https://github.com/pzs/nav-online-invoice/tree/v3.0.2"
+            },
+            "time": "2022-03-08T18:46:06+00:00"
         }
     ],
     "packages-dev": [],
@@ -51,8 +55,11 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "ext-simplexml": "^7.2"
+        "ext-simplexml": "^8.1.2"
     },
     "platform-dev": [],
-    "plugin-api-version": "1.1.0"
+    "platform-overrides": {
+        "php": "8.1.2"
+    },
+    "plugin-api-version": "2.2.0"
 }

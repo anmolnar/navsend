@@ -138,8 +138,13 @@ XML;
 			$this->explodeTaxNumber($node->addChild("customerVatData")->addChild("customerTaxNumber"), $soc->tva_intra);
 		} else {
 			$node->addChild("customerVatStatus", "OTHER");
-			$this->customer_vat_status = "OTHER";
-			$node->addChild("customerVatData")->addChild("communityVatNumber", $soc->tva_intra);
+			if ($this->isEUcountry($soc->country_code)) {
+				$this->customer_vat_status = "OTHER_EU";
+				$node->addChild("customerVatData")->addChild("communityVatNumber", $soc->tva_intra);
+			} else {
+				$this->customer_vat_status = "OTHER_NONEU";
+				$node->addChild("customerVatData")->addChild("thirdStateTaxId", $soc->tva_intra);
+			}
 		}
 		$node->customerName[] = $soc->name;
 		$this->explodeAddress($node->addChild("customerAddress"), $soc);
@@ -283,12 +288,27 @@ XML;
     }
 
 	private function addVatScope($node, $vat) {
-		if ($vat == 0 && $this->customer_vat_status == "OTHER") {
-			$vatScope = $node->addChild("vatOutOfScope");
-			$vatScope->addChild("case", "EUE");
-			$vatScope->addChild("reason", "Áfa Tv. területi hatályon kivüli");
+		if ($vat == 0) {
+			if ($this->customer_vat_status == "OTHER_EU") {
+				$vatScope = $node->addChild("vatOutOfScope");
+				$vatScope->addChild("case", "EUE");
+				$vatScope->addChild("reason", "Áfa Tv. területi hatályon kivüli");
+			} else {
+				$vatScope = $node->addChild("vatOutOfScope");
+				$vatScope->addChild("case", "HO");
+				$vatScope->addChild("reason", "Harmadik országban teljesített ügylet");
+			}
 		} else {
 			$node->addChild("vatPercentage", $vat / 100);
 		}
+
+
+	}
+
+	private function isEUcountry($code) {
+		$eu_countries = array("BE", "EL", "LT", "PT", "BG", "ES", "LU", "RO", "CZ", "FR",
+							  "HU", "SI", "DK", "HR", "MT", "SK", "DE", "IT", "NL", "FI",
+							  "EE", "CY", "AT", "SE", "IE",	"LV", "PL");
+		return in_array($code, $eu_countries);
 	}
 }

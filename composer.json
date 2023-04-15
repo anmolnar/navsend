@@ -3,8 +3,8 @@
     "description": "NAV",
     "type": "project",
     "require": {
-        "pzs/nav-online-invoice": "^3.0",
-        "ext-SimpleXML": "^7.2"
+        "pzs/nav-online-invoice": "^3.0.2",
+        "ext-SimpleXML": "^8.1.2"
     },
     "authors": [
         {
@@ -12,5 +12,10 @@
             "email": "andor@apache.org"
         }
     ],
-    "minimum-stability": "stable"
+    "minimum-stability": "stable",
+    "config": {
+        "platform": {
+            "php": "8.1.2"
+        }
+    }
 }
