@@ -301,8 +301,6 @@ XML;
 		} else {
 			$node->addChild("vatPercentage", $vat / 100);
 		}
-
-
 	}
 
 	private function isEUcountry($code) {
