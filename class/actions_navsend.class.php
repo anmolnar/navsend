@@ -1,6 +1,9 @@
 <?php
 
 class ActionsNavSend {
+
+	public $resprints;
+
 	/**
 	 * Overriding the pdf_getlinevatrate function : Use vat_src_code field in the case of 0% VAT items (FAD, AAM, etc.)
 	 *
@@ -13,7 +16,7 @@ class ActionsNavSend {
 	function pdf_getlinevatrate($parameters, &$object, &$action, $hookmanager) {
 
 		$line_num = $parameters['i'];
-		$ligne = $object->lines[$line_num];
+		$ligne = $object->lines[$line_num]; /** @var FactureLigne $ligne */
 
 		if ($ligne->tva_tx == 0 && !empty($ligne->vat_src_code)) {
 			$this->resprints = $ligne->vat_src_code;

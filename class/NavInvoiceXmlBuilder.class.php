@@ -10,7 +10,9 @@ require_once __DIR__ . "/navreference.class.php";
 require_once __DIR__ . "/RefCounterProvider.class.php";
 
 class Vat {
+	public $id;
 	public $tx;
+	public $vat_src_code;
 	public $vatRateNetAmount = 0;
 	public $vatRateNetAmountHUF = 0;
 	public $vatRateVatAmount = 0;
@@ -18,17 +20,23 @@ class Vat {
 	public $vatRateGrossAmount = 0;
 	public $vatRateGrossAmountHUF = 0;
 
-	public function __construct($tx) {
-		$this->tx = $tx;
+	public function __construct($id) {
+		$this->id = $id;
 	}
 
-	public function update($ligne) { /** @var FactureLigne $ligne */
+	public function update(FactureLigne $ligne) {
+		$this->tx = $ligne->tva_tx;
+		$this->vat_src_code = $ligne->vat_src_code;
 		$this->vatRateNetAmount += $ligne->multicurrency_total_ht;
 		$this->vatRateNetAmountHUF += $ligne->total_ht;
 		$this->vatRateVatAmount += $ligne->multicurrency_total_tva;
 		$this->vatRateVatAmountHUF += $ligne->total_tva;
 		$this->vatRateGrossAmount += $ligne->multicurrency_total_ttc;
 		$this->vatRateGrossAmountHUF += $ligne->total_ttc;
+	}
+
+	public static function createId(FactureLigne $ligne) {
+		return $ligne->tva_tx . '_' . $ligne->vat_src_code;
 	}
 }
 
@@ -40,6 +48,12 @@ class NavInvoiceXmlBuilder extends NavXmlBuilderBase {
 <InvoiceData xmlns="http://schemas.nav.gov.hu/OSA/3.0/data" xmlns:base="http://schemas.nav.gov.hu/OSA/3.0/base" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.nav.gov.hu/OSA/3.0/data invoiceData.xsd">
 </InvoiceData>
 XML;
+
+	const EU_COUNTRIES = array("BE", "EL", "LT", "PT", "BG", "ES", "LU", "RO", "CZ", "FR",
+							   "HU", "SI", "DK", "HR", "MT", "SK", "DE", "IT", "NL", "FI",
+							   "EE", "CY", "AT", "SE", "IE", "LV", "PL");
+	const VAT_EXEMPTION = array("AAM", "TAM", "KBAET", "KBAUK", "EAM", "NAM");
+	const VAT_OUTOFSCOPE = array("ATK", "EUFAD37", "EUFADE", "EUE", "HO");
 
     private $vat = array();
     private $origInvoice;    /** @var Facture $origInvoice */
@@ -154,11 +168,13 @@ XML;
     	$node->addChild("mergedItemIndicator", "false");
 		$i = 1;
 		foreach ($this->invoice->lines as $ligne) { /** @var FactureLigne $ligne */
-			if (array_key_exists($ligne->tva_tx, $this->vat)) {
-				$tva = $this->vat[$ligne->tva_tx];
+			$tva = null; /** @var Vat */
+			$tva_id = Vat::createId($ligne);
+			if (array_key_exists($tva_id, $this->vat)) {
+				$tva = $this->vat[$tva_id];
 			} else {
-				$tva = new Vat($ligne->tva_tx);
-				$this->vat[$ligne->tva_tx] = $tva;
+				$tva = new Vat($tva_id);
+				$this->vat[$tva_id] = $tva;
 			}
 			$tva->update($ligne);
 
@@ -205,7 +221,7 @@ XML;
 			$net_amount->addChild("lineNetAmount", $ligne->multicurrency_total_ht);
 			$net_amount->addChild("lineNetAmountHUF", $ligne->total_ht);
 
-			$this->addVatScope($amounts->addChild("lineVatRate"), $ligne->tva_tx);
+			$this->addVatScope($amounts->addChild("lineVatRate"), $ligne->tva_tx, $ligne->vat_src_code);
 
 			$vatdata = $amounts->addChild("lineVatData");
 			$vatdata->addChild("lineVatAmount", $ligne->multicurrency_total_tva);
@@ -221,9 +237,9 @@ XML;
 
 	private function addSummary($node) {
 		$normal = $node->addChild("summaryNormal");
-		foreach($this->vat as $tx => $tva) { /** @var Vat $tva */
+		foreach($this->vat as $tva_id => $tva) { /** @var Vat $tva */
 			$summary = $normal->addChild("summaryByVatRate");
-			$this->addVatScope($summary->addChild("vatRate"), $tx);
+			$this->addVatScope($summary->addChild("vatRate"), $tva->tx, $tva->vat_src_code);
 			$net = $summary->addChild("vatRateNetData");
 			$net->addChild("vatRateNetAmount", $tva->vatRateNetAmount);
 			$net->addChild("vatRateNetAmountHUF", $tva->vatRateNetAmountHUF);
@@ -287,26 +303,49 @@ XML;
         return -1;
     }
 
-	private function addVatScope($node, $vat) {
+	/**
+	 * Az viszont megoldás lehet, ha 0%-os ÁFÁ-khoz kitöltitek a "code" mezőt mostantól minden esetben
+	 * (ezt a helyes számlaképhez amúgyis szükéges) és a kód alapján el tudom dönteni, hogy melyik mezőben
+	 * kell jelenteni a NAV-nak. vatExemption v vatOutOfScope"
+	 */
+	private function addVatScope($node, $vat, $vat_src_code) {
+		// 0% AFA
 		if ($vat == 0) {
+
+			// Van AFA code megadva
+			if (!empty($vat_src_code)) {
+				if (in_array($vat_src_code, self::VAT_EXEMPTION)) {
+					$vatExemp = $node->addChild("vatExemption");
+					$vatExemp->addChild("case", $vat_src_code);
+					$vatExemp->addChild("reason", "Az adómentesség jelölése");
+					return;
+				}
+				if (in_array($vat_src_code, self::VAT_OUTOFSCOPE)) {
+					$vatScope = $node->addChild("vatOutOfScope");
+					$vatScope->addChild("case", $vat_src_code);
+					$vatScope->addChild("reason", "Az Áfa tv.hatályán kívül");
+					return;
+				}
+			}
+
+			// Nincs AFA kod megadva - EU-s partner
 			if ($this->customer_vat_status == "OTHER_EU") {
 				$vatScope = $node->addChild("vatOutOfScope");
 				$vatScope->addChild("case", "EUE");
-				$vatScope->addChild("reason", "Áfa Tv. területi hatályon kivüli");
-			} else {
-				$vatScope = $node->addChild("vatOutOfScope");
-				$vatScope->addChild("case", "HO");
-				$vatScope->addChild("reason", "Harmadik országban teljesített ügylet");
+				$vatScope->addChild("reason", "Az Áfa tv.hatályán kívül");
+				return;
 			}
+
+			// Minden mas eset - Harmadik orszagbeli
+			$vatScope = $node->addChild("vatOutOfScope");
+			$vatScope->addChild("case", "HO");
+			$vatScope->addChild("reason", "Az Áfa tv.hatályán kívül");
 		} else {
 			$node->addChild("vatPercentage", $vat / 100);
 		}
 	}
 
 	private function isEUcountry($code) {
-		$eu_countries = array("BE", "EL", "LT", "PT", "BG", "ES", "LU", "RO", "CZ", "FR",
-							  "HU", "SI", "DK", "HR", "MT", "SK", "DE", "IT", "NL", "FI",
-							  "EE", "CY", "AT", "SE", "IE",	"LV", "PL");
-		return in_array($code, $eu_countries);
+		return in_array($code, self::EU_COUNTRIES);
 	}
 }
