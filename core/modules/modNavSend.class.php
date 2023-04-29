@@ -33,8 +33,8 @@ class modNavSend extends DolibarrModules
 		$this->description = "NAV Send";
 		// Used only if file README.md and README-LL.md not found.
 		$this->descriptionlong = "";
-		$this->editor_name = '';
-		$this->editor_url = '';
+		$this->editor_name = 'Andor Molnar';
+		$this->editor_url = 'mailto:andor@apache.org';
 		// Possible values for version are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated' or a version string like 'x.y.z'
 		$this->version = '1.1.5';
 		// Url to the file with your last numberversion of this module
@@ -125,7 +125,7 @@ class modNavSend extends DolibarrModules
 		        'method'=>'updateAll',
 		        'parameters'=>'',
 		        'comment'=>'Update NAV result database',
-		        'frequency'=>2,
+		        'frequency'=>5,
 		        'unitfrequency'=>60,
 		        'priority'=>50,
 		        'status'=>1,

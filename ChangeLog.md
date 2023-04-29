@@ -1,4 +1,10 @@
+### [1.1.5] 2023-05-??
+
+  * NavUpdater: annulment esetén a VERIFICATION_REJECTED is végstátusznak minősül és lezárja a workflow-t
+  * NavUpdater: alapértelmezetten 5 percenként fusson
+
+
 ### [1.1.4] 2023-04-19
 
-  * Kodok hasznalata 0%-os AFA-hoz a megfelelo helyen: vatExemption, vatOutOfScope
-  * Fix: harmadik orszagbeli (nem-EU) szamlakat nem lehet hitelesiteni, mert az adoszam hibasan a communityVatNumber mezo kerul.
+  * Kódok használata 0%-os ÁFÁ-hoz a megfelelő helyen: vatExemption, vatOutOfScope
+  * Fix: harmadik országbéli (nem-EU) számlákat nem lehet hitelesíteni, mert az adószám hibásan a communityVatNumber mezőbe kerül

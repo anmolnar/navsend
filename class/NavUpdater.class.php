@@ -110,7 +110,9 @@ class NavUpdater {
 
         /* Status update */
         if ($result->invoiceStatus == "DONE" &&
-                ($annulmentVerificationStatus == "VERIFICATION_DONE" || empty($annulmentData))) {
+                ($annulmentVerificationStatus == "VERIFICATION_DONE" ||
+                $annulmentVerificationStatus == "VERIFICATION_REJECTED" ||
+                empty($annulmentData))) {
             $n->result = NavResult::RESULT_SAVED;
         }
         if ($result->invoiceStatus == "ABORTED") {
