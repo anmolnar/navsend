@@ -1,8 +1,8 @@
-### [1.1.5] 2023-05-??
+### [1.1.5] 2023-04-29
 
+  * NAV API: „INVALID_LINE_OPERATION” kezelése: jóváíró számla esetén már nincs MODIFY a számla során
   * NavUpdater: annulment esetén a VERIFICATION_REJECTED is végstátusznak minősül és lezárja a workflow-t
   * NavUpdater: alapértelmezetten 5 percenként fusson
-
 
 ### [1.1.4] 2023-04-19
 

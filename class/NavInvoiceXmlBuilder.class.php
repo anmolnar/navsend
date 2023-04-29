@@ -1,5 +1,5 @@
 <?php
-/* Copyright (C) 2020 Andor Molnár <andor@apache.org> */
+/* Copyright (C) 2023 Andor Molnár <andor@apache.org> */
 
 require_once __DIR__ . '/NavXmlBuilderBase.class.php';
 require_once __DIR__ . "/../../../core/class/ccountry.class.php";
@@ -167,6 +167,10 @@ XML;
 	private function addInvoiceLines($node) {
     	$node->addChild("mergedItemIndicator", "false");
 		$i = 1;
+		$j = 1;
+		if ($this->modusz == NavBase::MODUSZ_MODIFY || $this->modusz == NavBase::MODUSZ_STORNO) {
+			$j = $this->findNextLineNumberReference();
+		}
 		foreach ($this->invoice->lines as $ligne) { /** @var FactureLigne $ligne */
 			$tva = null; /** @var Vat */
 			$tva_id = Vat::createId($ligne);
@@ -182,9 +186,8 @@ XML;
             $line->addChild("lineNumber", $i);
             if ($this->modusz == NavBase::MODUSZ_MODIFY || $this->modusz == NavBase::MODUSZ_STORNO) {
                 $modificationRef = $line->addChild("lineModificationReference");
-                $j = $this->findOrigInvoiceLigne($ligne);
-                $modificationRef->addChild("lineNumberReference", $j > 0 ? $j : $i);
-                $modificationRef->addChild("lineOperation", $j > 0 ? "MODIFY" : "CREATE");
+                $modificationRef->addChild("lineNumberReference", $j++);
+                $modificationRef->addChild("lineOperation", "CREATE");
             }
             if (!empty($ligne->fk_product)) {
                 $p = new Product($this->db);
@@ -289,19 +292,18 @@ XML;
 		return $dt->format(self::DATE_FORMAT);
     }
 
-    private function findOrigInvoiceLigne(FactureLigne $ligne) {
-        $j = 1;
-        foreach ($this->origInvoice->lines as $origLigne) {
-            if (!empty($ligne->fk_product) && $ligne->fk_product == $origLigne->fk_product) {
-                return $j;
-            }
-            if (empty($ligne->fk_product) && $ligne->desc == $origLigne->desc) {
-                return $j;
-            }
-            $j++;
-        }
-        return -1;
-    }
+	private function findNextLineNumberReference() {
+		$sql = "select 1 from ".MAIN_DB_PREFIX."facturedet where fk_facture in " .
+			"(select ".$this->origInvoice->id." union select rowid from ".
+			MAIN_DB_PREFIX."facture where fk_facture_source=".$this->origInvoice->id.")";
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			return $this->db->num_rows($resql) + 1;
+		} else {
+			dol_print_error($this->db);
+			throw new NavSendException("Unable to calculate next lineNumberReference for invoice " . $this->origInvoice->ref);
+		}
+	}
 
 	/**
 	 * Az viszont megoldás lehet, ha 0%-os ÁFÁ-khoz kitöltitek a "code" mezőt mostantól minden esetben
