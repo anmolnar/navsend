@@ -22,6 +22,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/triggers/dolibarrtriggers.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavInvoice.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavAnnulment.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavInvoiceSender.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/exception/NavAnnulmentInProgressException.class.php';
 
 /**
  *  Class of triggers for NavSend module
@@ -104,6 +105,9 @@ class InterfaceNavSendTriggers extends DolibarrTriggers
                 $f = $object; /** @var Facture $f */
                 try {
                     NavInvoice::send($this->db, $user, $mysoc, $f);
+                } catch (NavAnnulmentInProgressException $ex) {
+                    array_push($this->errors, "Érvénytelenítés folyamatban. Új beküldés előtt jóvá kell hagyni.");
+                    return -1;
                 } catch (Exception $ex) {
                     dol_syslog(__METHOD__.' '.$ex->getMessage(), LOG_ERR);
                     array_push($this->errors, "NAV ".$ex->getMessage());
@@ -116,7 +120,7 @@ class InterfaceNavSendTriggers extends DolibarrTriggers
                 dol_syslog("BILL unvalidated: id=".$object->id . ", ref=" . $object->ref . ", newref=" . $object->newref . ", status = " . $object->statut);
                 $f = $object; /** @var Facture $f */
                 try {
-                    $err = NavAnnulment::send($this->db, $user, $mysoc, $f);
+                    NavAnnulment::send($this->db, $user, $mysoc, $f);
                 } catch (Exception $ex) {
                     dol_syslog(__METHOD__.' '.$ex->getMessage(), LOG_ERR);
                     array_push($this->errors, "NAV ".$ex->getMessage());

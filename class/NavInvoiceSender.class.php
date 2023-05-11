@@ -40,7 +40,7 @@ class NavInvoiceSender {
 		} catch (NavOnlineInvoice\CurlError | NavOnlineInvoice\HttpResponseError $ex) {
 			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_ERR);
             $this->resultCreateOrUpdate(NavResult::RESULT_NETERROR, $ex->getMessage(), "", "");
-            throw $ex;
+            return;	// Net error is retryable / NavUpdater will retransfer
 		} catch (NavOnlineInvoice\GeneralErrorResponse | NavOnlineInvoice\GeneralExceptionResponse $ex) {
 			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_ERR);
             $this->resultCreateOrUpdate(NavResult::RESULT_NAVERROR, $ex->getMessage(), $ex->getErrorCode(), "");
