@@ -38,8 +38,12 @@ class NavInvoiceSender {
         	dol_syslog(__METHOD__." ".$ex->getMessage(), LOG_ERR);
             $this->resultCreateOrUpdate(NavResult::RESULT_XSDERROR, $ex->getMessage(), "", "");
             throw $ex;
+		} catch (NavNetErrorException $ex) {
+			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_WARNING);
+            $this->resultCreateOrUpdate(NavResult::RESULT_NETERROR, $ex->getMessage(), "", "");
+			throw $ex;
 		} catch (NavOnlineInvoice\CurlError | NavOnlineInvoice\HttpResponseError $ex) {
-			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_ERR);
+			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_WARNING);
             $this->resultCreateOrUpdate(NavResult::RESULT_NETERROR, $ex->getMessage(), "", "");
             throw new NavNetErrorException($ex->getMessage());
 		} catch (NavOnlineInvoice\GeneralErrorResponse | NavOnlineInvoice\GeneralExceptionResponse $ex) {

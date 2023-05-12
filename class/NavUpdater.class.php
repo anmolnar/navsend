@@ -70,8 +70,8 @@ class NavUpdater {
                         break;
                 }
                 $i++;
-            } catch (NavNetErrorException $ex) {
-                dol_syslog(__METHOD__." NAV net error for ref $n->ref: ".$ex->getMessage(), LOG_WARNING);
+            //} catch (NavNetErrorException $ex) {
+            //    dol_syslog(__METHOD__." NAV net error for ref $n->ref: ".$ex->getMessage(), LOG_WARNING);
             } catch (Exception $ex) {
                 dol_syslog(__METHOD__." Error checking invoice ref $n->ref: ".$ex->getMessage(), LOG_ERR);
                 array_push($this->errors, $n->ref.": ".$ex->getMessage());
@@ -161,7 +161,7 @@ class NavUpdater {
 		dol_syslog(__METHOD__." Retrying transmission of invoice ref $n->ref modusz $n->modusz", LOG_INFO);
 		switch ($n->modusz) {
 			case NavBase::MODUSZ_ANNULMENT:
-				$model = new NavAnnulment($this->db, $user, $n->ref);
+				$model = new NavAnnulment($this->db, $user, $n->ref, $n);
 				break;
             case NavBase::MODUSZ_CREATE:
             case NavBase::MODUSZ_MODIFY:

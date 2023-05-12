@@ -13,6 +13,8 @@ abstract class NavBase {
     protected $ref;
     protected $reporter; /** @var NavReporter $reporter */
 	protected $reffer; /** @var RefCounterProvider $reffer */
+    protected ?NavResult $result;
+
 
 	const MODUSZ_CREATE = "CREATE";
 	const MODUSZ_ANNULMENT = "ANNULMENT";
@@ -20,12 +22,13 @@ abstract class NavBase {
     const MODUSZ_STORNO = "STORNO";
     const MODUSZ_UNKOWN = "UNKNOWN";
 
-	public function __construct($db, $user, $ref = "") {
+	public function __construct($db, $user, $ref = "", $result = null) {
         $this->db = $db;
         $this->user = $user;
         $this->ref = $ref;
         $this->reporter = ReporterFactory::getReporter();
         $this->reffer = new RefCounterProvider($db);
+        $this->result = $result;
     }
 
     public abstract function report(SimpleXMLElement $xml);

@@ -10,12 +10,10 @@ require_once __DIR__ . '/exception/NavAnnulmentInProgressException.class.php';
 class NavInvoice extends NavBase {
 
     private $modusz;
-    private ?NavResult $result;
 
     function __construct($db, $user, $ref, $modusz, $result = null) {
-        parent::__construct($db, $user, $ref);
+        parent::__construct($db, $user, $ref, $result);
         $this->modusz = $modusz;
-        $this->result = $result;
     }
 
     public function report(SimpleXMLElement $xml) {
