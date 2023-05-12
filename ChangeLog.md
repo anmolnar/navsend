@@ -1,3 +1,8 @@
+### [1.1.6] 2023-05-12
+
+  * Reportolás során a hálózati hiba ne legyen blokkoló: a számla kiállítás sikeres, a NavUpdater később próbálja újraküldeni.
+  * Számla beküldést megszakítja, ha találunk folyamatban lévő technikai érvénytelenítést.
+
 ### [1.1.5] 2023-04-29
 
   * NAV API: „INVALID_LINE_OPERATION” kezelése: jóváíró számla esetén már nincs MODIFY a számla során

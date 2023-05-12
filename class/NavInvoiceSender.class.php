@@ -3,6 +3,7 @@
 
 require_once __DIR__ . "/NavXmlBuilderBase.class.php";
 require_once __DIR__ . "/navresult.class.php";
+require_once __DIR__ . '/exception/NavNetErrorException.class.php';
 
 class NavInvoiceSender {
 
@@ -40,7 +41,7 @@ class NavInvoiceSender {
 		} catch (NavOnlineInvoice\CurlError | NavOnlineInvoice\HttpResponseError $ex) {
 			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_ERR);
             $this->resultCreateOrUpdate(NavResult::RESULT_NETERROR, $ex->getMessage(), "", "");
-            return;	// Net error is retryable / NavUpdater will retransfer
+            throw new NavNetErrorException($ex->getMessage());
 		} catch (NavOnlineInvoice\GeneralErrorResponse | NavOnlineInvoice\GeneralExceptionResponse $ex) {
 			dol_syslog(__METHOD__ . " " . $ex->getMessage(), LOG_ERR);
             $this->resultCreateOrUpdate(NavResult::RESULT_NAVERROR, $ex->getMessage(), $ex->getErrorCode(), "");

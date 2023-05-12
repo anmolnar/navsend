@@ -5,9 +5,9 @@ require_once __DIR__ . '/ReporterFactory.class.php';
 require_once __DIR__ . '/NavAnnulment.class.php';
 require_once __DIR__ . '/NavInvoice.class.php';
 require_once __DIR__ . '/exception/NavSendException.class.php';
+require_once __DIR__ . '/exception/NavNetErrorException.class.php';
 require_once __DIR__ . '/../../../compta/facture/class/facture.class.php';
 require_once DOL_DOCUMENT_ROOT.'/comm/action/class/actioncomm.class.php';
-require_once __DIR__ . '/exception/NavSendException.class.php';
 
 class NavUpdater {
 
@@ -70,6 +70,8 @@ class NavUpdater {
                         break;
                 }
                 $i++;
+            } catch (NavNetErrorException $ex) {
+                dol_syslog(__METHOD__." NAV net error for ref $n->ref: ".$ex->getMessage(), LOG_WARNING);
             } catch (Exception $ex) {
                 dol_syslog(__METHOD__." Error checking invoice ref $n->ref: ".$ex->getMessage(), LOG_ERR);
                 array_push($this->errors, $n->ref.": ".$ex->getMessage());
@@ -164,7 +166,7 @@ class NavUpdater {
             case NavBase::MODUSZ_CREATE:
             case NavBase::MODUSZ_MODIFY:
             case NavBase::MODUSZ_STORNO:
-				$model = new NavInvoice($this->db, $user, $n->ref, $n->modusz);
+				$model = new NavInvoice($this->db, $user, $n->ref, $n->modusz, $n);
                 break;
             case NavBase::MODUSZ_UNKOWN:
                 dol_syslog(__METHOD__." Ignoring unsupported modusz UNKOWN for ref ".$n->ref, LOG_INFO);

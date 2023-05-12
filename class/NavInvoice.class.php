@@ -10,10 +10,12 @@ require_once __DIR__ . '/exception/NavAnnulmentInProgressException.class.php';
 class NavInvoice extends NavBase {
 
     private $modusz;
+    private ?NavResult $result;
 
-    function __construct($db, $user, $ref, $modusz) {
+    function __construct($db, $user, $ref, $modusz, $result = null) {
         parent::__construct($db, $user, $ref);
         $this->modusz = $modusz;
+        $this->result = $result;
     }
 
     public function report(SimpleXMLElement $xml) {
@@ -32,7 +34,7 @@ class NavInvoice extends NavBase {
     public static function send($db, $user, $mysoc, Facture $f, $result = null) {
         $builder = new NavInvoiceXmlBuilder($db, $mysoc, $f);
         $builder->build();
-        $sender = new NavInvoiceSender(new NavInvoice($db, $user, $builder->getRef(), $builder->getModusz()), $result);
+        $sender = new NavInvoiceSender(new NavInvoice($db, $user, $builder->getRef(), $builder->getModusz(), $result), $result);
         $sender->send($builder->getXml());
     }
 
@@ -42,7 +44,11 @@ class NavInvoice extends NavBase {
 
     private function checkLastAnnulmentStatus() {
         $nav = new NavResult($this->db);
-        $res = $nav->fetchCommon(null, $this->ref, "AND modusz='ANNULMENT' AND result IN (3,4) ORDER BY date_creation DESC");
+        $where = "AND modusz='ANNULMENT' AND result IN (3,4)";
+        if ($this->result != null) {
+            $where .= "AND rowid < ".$this->result->id;
+        }
+        $res = $nav->fetchCommon(null, $this->ref, $where." ORDER BY date_creation DESC");
 
         if ($res < 0) {
             // Hiba
@@ -55,6 +61,6 @@ class NavInvoice extends NavBase {
         }
 
         // De van
-        throw new NavAnnulmentInProgressException();
+        throw new NavAnnulmentInProgressException("Annulment in progress");
     }
 }

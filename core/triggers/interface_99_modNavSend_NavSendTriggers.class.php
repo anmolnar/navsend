@@ -23,6 +23,7 @@ require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavInvoice.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavAnnulment.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/NavInvoiceSender.class.php';
 require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/exception/NavAnnulmentInProgressException.class.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/navsend/class/exception/NavNetErrorException.class.php';
 
 /**
  *  Class of triggers for NavSend module
@@ -105,6 +106,8 @@ class InterfaceNavSendTriggers extends DolibarrTriggers
                 $f = $object; /** @var Facture $f */
                 try {
                     NavInvoice::send($this->db, $user, $mysoc, $f);
+                } catch (NavNetErrorException $ex) {
+                    setEventMessages("NAV hálózati hiba, később újrapróbáljuk: " . $ex->getMessage(), null, 'warnings');
                 } catch (NavAnnulmentInProgressException $ex) {
                     array_push($this->errors, "Érvénytelenítés folyamatban. Új beküldés előtt jóvá kell hagyni.");
                     return -1;
@@ -121,6 +124,9 @@ class InterfaceNavSendTriggers extends DolibarrTriggers
                 $f = $object; /** @var Facture $f */
                 try {
                     NavAnnulment::send($this->db, $user, $mysoc, $f);
+                    setEventMessages("Technikai érvénytelenítés beküldve, ne felejtsd el jóváhagyni mielőtt módosítasz!", null, 'warnings');
+                } catch (NavNetErrorException $ex) {
+                    setEventMessages("NAV hálózati hiba, később újrapróbáljuk: " . $ex->getMessage(), null, 'warnings');
                 } catch (Exception $ex) {
                     dol_syslog(__METHOD__.' '.$ex->getMessage(), LOG_ERR);
                     array_push($this->errors, "NAV ".$ex->getMessage());
